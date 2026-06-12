@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>炬鋒CNC ERP - 進銷存</title>
+<style>
+:root{
+  --silver:#d6d3ce; --silver-d:#848484; --silver-l:#ffffff;
+  --cream:#f7f3e8; --grid-row:#ffffe1; --grid-line:#b8b5a8;
+  --navy:#0000a8; --sel:#1e5ade; --hdr:#d6d3ce; --hdrblue:#b9c6e2;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{background:var(--silver);font-family:"細明體","PMingLiU","MingLiU","Courier New",monospace;font-size:13px;color:#000;overflow:hidden;}
+/* ===== Win98 bevel helpers ===== */
+.raised{border:1px solid;border-color:var(--silver-l) var(--silver-d) var(--silver-d) var(--silver-l);}
+.sunken{border:1px solid;border-color:var(--silver-d) var(--silver-l) var(--silver-l) var(--silver-d);}
+button.w98{background:var(--silver);border:1px solid;border-color:var(--silver-l) #404040 #404040 var(--silver-l);box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 var(--silver-d);font-family:inherit;font-size:12px;padding:1px 4px;cursor:pointer;white-space:nowrap;}
+button.w98:active{border-color:#404040 var(--silver-l) var(--silver-l) #404040;box-shadow:none;}
+button.w98:disabled{color:#848484;text-shadow:1px 1px 0 #fff;cursor:default;}
+/* ===== 標題列 ===== */
+#titlebar{height:22px;background:linear-gradient(90deg,#000080,#1084d0);color:#fff;display:flex;align-items:center;padding:0 4px;font-weight:bold;}
+#titlebar .tbtn{margin-left:2px;width:18px;height:16px;font-size:10px;line-height:12px;text-align:center;font-weight:bold;color:#000;}
+#titlebar .sp{flex:1;}
+/* ===== 功能表列 ===== */
+#menubar{background:#d8e4f8;border-bottom:1px solid #9db4d8;padding:1px 2px;display:flex;align-items:center;gap:2px;}
+#menubar .logo{width:16px;height:16px;background:radial-gradient(circle at 35% 35%,#ff6a6a,#c00000);border-radius:3px;margin-right:4px;}
+#menubar span{padding:1px 7px;color:#000;cursor:default;white-space:nowrap;}
+#menubar span u{color:#000;}
+#menubar span:hover{background:#b8ccec;}
+#menubar .sp{flex:1;}
+#menubar .winbtn{font-size:11px;padding:0 4px;color:#000;}
+/* ===== 工具列 ===== */
+#toolbar{background:var(--silver);padding:2px 3px;display:flex;align-items:center;gap:1px;border-bottom:1px solid var(--silver-d);}
+#toolbar select{font-family:inherit;font-size:12px;height:20px;margin-right:6px;}
+.tico{width:22px;height:20px;font-size:11px;line-height:18px;text-align:center;padding:0;color:#fff;font-weight:bold;}
+.tsep{width:6px;}
+/* ===== 模組分頁(切換畫面) ===== */
+#modtabs{background:var(--silver);display:flex;align-items:flex-end;padding:2px 4px 0 4px;gap:2px;border-bottom:1px solid var(--silver-d);}
+#modtabs .mtab{padding:2px 14px;background:#c8c5be;border:1px solid var(--silver-d);border-bottom:none;border-radius:3px 3px 0 0;cursor:pointer;color:#444;}
+#modtabs .mtab.on{background:var(--cream);color:var(--navy);font-weight:bold;position:relative;top:1px;}
+#modtabs .sp{flex:1;}
+#modtabs .reset{font-size:11px;margin-bottom:2px;}
+/* ===== F6/F7 頁籤 ===== */
+.f6tabs{background:var(--silver);display:flex;align-items:flex-end;padding:1px 2px 0 2px;height:22px;}
+.f6tabs .ftab{padding:1px 10px;border:1px solid var(--silver-d);border-bottom:none;border-radius:2px 2px 0 0;background:var(--silver);margin-right:1px;cursor:pointer;}
+.f6tabs .ftab.on{background:#ffffce;color:blue;}
+/* ===== 表頭區 ===== */
+.formarea{background:var(--cream);border:1px solid var(--silver-d);padding:3px 6px 4px 6px;}
+.frow{display:flex;align-items:center;margin:1px 0;gap:4px;flex-wrap:nowrap;}
+.lbl{white-space:nowrap;color:#000;}
+.lbl.red{color:#c00000;font-weight:bold;}
+.lbl.dred{color:#900000;font-weight:bold;}
+.lbl.blue{color:var(--navy);}
+.fld{background:#fff;border:1px solid #a8a48f;border-top-color:#8a8674;color:var(--navy);font-family:inherit;font-size:13px;height:19px;padding:0 3px;}
+.fld.r{text-align:right;}
+.fld.c{text-align:center;}
+.fld.red{color:#c00000;font-weight:bold;text-align:center;}
+select.fld{color:var(--navy);height:21px;}
+.cb{display:flex;align-items:center;gap:3px;white-space:nowrap;}
+.grpbox{border:1px solid #a8a48f;background:var(--cream);padding:0 6px;display:flex;align-items:center;gap:14px;height:21px;}
+/* ===== 資料格 ===== */
+.gridwrap{overflow:auto;background:#cdcabe;position:relative;}
+table.grid{border-collapse:separate;border-spacing:0;table-layout:fixed;}
+table.grid th{background:var(--hdr);border:1px solid;border-color:var(--silver-l) var(--silver-d) var(--silver-d) var(--silver-l);font-weight:normal;padding:1px 3px;white-space:nowrap;overflow:hidden;font-size:13px;height:20px;position:sticky;top:0;z-index:2;text-align:left;}
+table.grid th.bl{background:var(--hdrblue);}
+table.grid td{background:var(--grid-row);border-right:1px solid var(--grid-line);border-bottom:1px solid var(--grid-line);padding:0 3px;white-space:nowrap;overflow:hidden;height:20px;color:#000;}
+table.grid td.r{text-align:right;}
+table.grid td.c{text-align:center;}
+table.grid td:focus{outline:1px dotted #000;background:#fff;}
+table.grid td.gut{background:var(--silver);border:1px solid;border-color:var(--silver-l) var(--silver-d) var(--silver-d) var(--silver-l);color:#c00000;text-align:center;padding:0;}
+tr.sel-blue td{background:var(--sel) !important;color:#fff !important;}
+tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;}
+/* ===== 分割窗格(批號/製程明細) ===== */
+.splitarea{display:flex;flex:1;min-height:0;}
+.pane-l{overflow:auto;background:#cdcabe;border-right:3px solid var(--silver);flex:none;}
+.pane-r{overflow:auto;background:#cdcabe;flex:1;}
+/* ===== 底部按鈕列 ===== */
+.btnbar{background:var(--silver);border-top:1px solid var(--silver-l);display:flex;align-items:stretch;padding:2px 3px;gap:1px;}
+.btnbar .sp{flex:1;}
+.nav{display:flex;flex-direction:column;align-items:center;width:46px;padding:1px 0;}
+.nav .ic{font-size:11px;height:13px;line-height:13px;}
+.nav .tx{font-size:12px;}
+.stat{color:#c00000;font-weight:bold;display:flex;align-items:center;padding:0 8px;font-size:14px;}
+/* 各畫面容器 */
+.screen{display:none;flex-direction:column;height:100%;}
+.screen.on{display:flex;}
+#app{display:flex;flex-direction:column;height:calc(100% - 22px);}
+.fill{flex:1;min-height:0;}
+/* 訂單右側合計面板 */
+.totpanel{width:300px;background:var(--cream);border-left:1px solid var(--silver-d);padding:4px 8px;}
+.totrow{display:flex;align-items:center;margin:3px 0;}
+.totrow .tl{width:88px;}
+.totrow .tv{flex:1;border-bottom:1px solid #9a9684;background:transparent;border-top:none;border-left:none;border-right:none;text-align:right;color:#000;font-family:inherit;font-size:13px;height:18px;}
+/* 捲軸 win98 風 */
+::-webkit-scrollbar{width:16px;height:16px;background:#efefe7;}
+::-webkit-scrollbar-thumb{background:var(--silver);border:1px solid;border-color:var(--silver-l) var(--silver-d) var(--silver-d) var(--silver-l);}
+::-webkit-scrollbar-button{background:var(--silver);border:1px solid;border-color:var(--silver-l) var(--silver-d) var(--silver-d) var(--silver-l);width:16px;height:16px;}
+</style>
+</head>
+<body>
+<div id="titlebar"><span>進銷存 - 炬鋒CNC</span><span class="sp"></span>
+  <span class="tbtn raised">_</span><span class="tbtn raised">□</span><span class="tbtn raised">×</span>
+</div>
+<div id="app">
+<!-- 功能表 -->
+<div id="menubar">
+  <div class="logo"></div>
+  <span><u>1</u>.基本資料</span><span><u>2</u>.進貨資料</span><span><u>3</u>.銷貨資料</span><span><u>4</u>.存貨資料</span><span><u>5</u>.發票資料</span><span><u>6</u>.加工管理</span><span><u>7</u>.鐵桶管理</span><span><u>8</u>.報表專區</span><span><u>9</u>.圖表分析</span><span><u>A</u>.輔助系統</span><span><u>B</u>.視窗</span><span><u>C</u>.說明</span><span><u>D</u>.網址連結</span>
+  <span class="sp"></span><span class="winbtn">—</span><span class="winbtn">□</span><span class="winbtn">×</span>
+</div>
+<!-- 工具列 -->
+<div id="toolbar">
+  <select class="sunken"><option>進銷存</option></select>
+  <span id="icons"></span>
+</div>
+<!-- 模組切換 -->
+<div id="modtabs">
+  <div class="mtab on" data-mod="inv" onclick="switchMod('inv')">庫存查詢</div>
+  <div class="mtab" data-mod="ord" onclick="switchMod('ord')">銷貨訂單</div>
+  <div class="mtab" data-mod="disp" onclick="switchMod('disp')">派工</div>
+  <span class="sp"></span>
+  <button class="w98 reset" onclick="resetAll()">還原預設值</button>
+</div>
+
+<!-- ════════════ 畫面一：庫存查詢 ════════════ -->
+<div class="screen on" id="scr-inv">
+  <div class="f6tabs"><div class="ftab on">登改刪F6</div><div class="ftab">查印F7</div></div>
+  <div class="formarea" id="invform">
+    <div class="frow">
+      <span class="lbl">倉號篩選</span><input class="fld" data-h="filter" style="width:240px">
+      <span class="lbl" style="margin-left:30px">庫存數量篩選</span>
+      <span class="grpbox"><label class="cb"><input type="checkbox" data-h="qgt"> &gt;0</label><label class="cb"><input type="checkbox" data-h="qeq"> =0</label><label class="cb"><input type="checkbox" data-h="qlt"> &lt;0</label></span>
+      <span class="lbl" style="margin-left:30px">庫存重量篩選</span>
+      <span class="grpbox"><label class="cb"><input type="checkbox" data-h="wgt"> &gt;0</label><label class="cb"><input type="checkbox" data-h="weq"> =0</label><label class="cb"><input type="checkbox" data-h="wlt"> &lt;0</label></span>
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:86px">倉庫編號</span><input class="fld" data-h="wh" style="width:200px">
+      <span class="lbl" style="width:60px;margin-left:14px">鋼種</span><input class="fld" data-h="steel" style="width:170px">
+      <span class="lbl" style="width:72px;margin-left:14px">廠別編號</span><input class="fld" data-h="vendor" style="width:150px">
+      <span class="lbl" style="width:48px;margin-left:14px">品名</span><input class="fld" data-h="pname" style="flex:1">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:86px">產品種類</span>
+      <select class="fld" data-h="ptype" style="width:200px"><option>1.一般</option><option>2.特殊</option></select>
+      <span class="lbl" style="width:60px;margin-left:14px">規格</span><input class="fld r" data-h="spec" style="width:170px">
+      <span class="lbl" style="width:72px;margin-left:14px"></span><span style="width:150px"></span>
+      <span class="lbl" style="width:48px;margin-left:14px">公式</span><input class="fld" data-h="formula" style="width:170px">
+      <span class="lbl" style="margin-left:14px">比重</span><input class="fld r" data-h="sg" style="flex:1">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:86px">單位重</span><input class="fld r" data-h="unitw" style="width:200px">
+      <span class="lbl" style="width:60px;margin-left:14px">數量</span><input class="fld r" data-h="qty" style="width:170px">
+      <span class="lbl" style="width:72px;margin-left:14px">重量</span><input class="fld r" data-h="wt" style="width:150px">
+      <span class="lbl" style="width:48px;margin-left:14px">單位</span><input class="fld" data-h="unit" style="width:170px">
+      <span class="lbl" style="margin-left:14px">批號平均進價</span><input class="fld r" data-h="avgp" style="flex:1">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:86px">庫存加權進價</span><input class="fld r" data-h="wavg" style="width:200px">
+      <span class="lbl" style="width:60px;margin-left:14px">售價</span><input class="fld r" data-h="sell" style="width:170px">
+      <span class="lbl" style="width:72px;margin-left:14px">成本基準</span>
+      <select class="fld" data-h="cbase" style="width:150px"><option>1.重量</option><option>2.數量</option></select>
+      <span class="lbl" style="width:64px;margin-left:14px">合計成本</span><input class="fld r" data-h="ctot" style="width:154px">
+      <span class="lbl" style="margin-left:14px">倉位</span><input class="fld" data-h="loc" style="flex:1">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:110px">訂單待出數量</span><input class="fld r" data-h="oq" style="width:176px">
+      <span class="lbl" style="width:110px;margin-left:14px">採購待進數量</span><input class="fld r" data-h="pq" style="width:170px">
+      <span class="lbl" style="width:110px;margin-left:14px">預估結餘數量</span><input class="fld r" data-h="eq" style="flex:1">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:110px">訂單待出重量</span><input class="fld r" data-h="ow" style="width:176px">
+      <span class="lbl" style="width:110px;margin-left:14px">採購待進重量</span><input class="fld r" data-h="pw" style="width:170px">
+      <span class="lbl" style="width:110px;margin-left:14px">預估結餘重量</span><input class="fld r" data-h="ew" style="flex:1">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:110px">已派數量</span><input class="fld r" data-h="dq" style="width:176px">
+      <span class="lbl" style="width:110px;margin-left:14px">目前可用數量</span><input class="fld r" data-h="aq" style="width:170px">
+      <span class="lbl" style="width:110px;margin-left:14px">已派重量</span><input class="fld r" data-h="dw" style="width:250px">
+      <span class="lbl" style="margin-left:14px">目前可用重量</span><input class="fld r" data-h="aw" style="flex:1">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:110px">備註</span><input class="fld" data-h="note" style="width:480px">
+      <span class="lbl" style="margin-left:14px">異動日期</span><input class="fld" data-h="mdate" style="width:200px">
+    </div>
+    <div class="frow">
+      <span class="lbl" style="width:110px">用料鋼種</span><input class="fld" data-h="msteel" style="width:176px">
+      <span class="lbl" style="width:110px;margin-left:14px">用料品名</span><input class="fld" data-h="mpname" style="width:170px">
+      <span class="lbl" style="width:110px;margin-left:14px">用料規格</span><input class="fld" data-h="mspec" style="width:250px">
+      <span class="lbl" style="margin-left:14px">用料重量</span><input class="fld r" data-h="mwt" style="flex:1">
+    </div>
+  </div>
+  <div class="f6tabs" style="height:21px">
+    <div class="ftab on" id="invtab-main" onclick="setView('inv','main')">庫存主檔</div>
+    <div class="ftab" id="invtab-proc" onclick="setView('inv','proc')">製程</div>
+    <div class="ftab" id="invtab-sub" onclick="setView('inv','sub')">批號</div>
+  </div>
+  <div class="splitarea fill" id="invarea"></div>
+  <div class="btnbar">
+    <button class="w98 nav" onclick="nav('inv',-9999)"><span class="ic" style="color:#000080">|◀</span><span class="tx">首筆H</span></button>
+    <button class="w98 nav" onclick="nav('inv',-1)"><span class="ic" style="color:#000080">◀</span><span class="tx">往前↑</span></button>
+    <button class="w98 nav" onclick="nav('inv',1)"><span class="ic" style="color:#000080">▶</span><span class="tx">往後↓</span></button>
+    <button class="w98 nav" onclick="nav('inv',9999)"><span class="ic" style="color:#000080">▶|</span><span class="tx">末筆E</span></button>
+    <button class="w98 nav" onclick="delRow('inv')"><span class="ic" style="color:#c00000">━</span><span class="tx">刪除D</span></button>
+    <button class="w98 nav" onclick="alert('進入修改模式：直接點選欄位即可編輯')"><span class="ic" style="color:#008000">✎</span><span class="tx">修改M</span></button>
+    <button class="w98 nav" disabled><span class="ic">▣</span><span class="tx">確認S</span></button>
+    <button class="w98 nav" disabled><span class="ic">✕</span><span class="tx">取消Z</span></button>
+    <span class="sp"></span>
+    <button class="w98 nav" style="width:58px" onclick="alert('庫存整理完成')"><span class="ic" style="color:#0000c0">▬</span><span class="tx">庫存整理</span></button>
+    <button class="w98 nav" onclick="alert('明細')"><span class="ic" style="color:#000080">🗗</span><span class="tx">明細D</span></button>
+    <button class="w98 nav" style="width:64px" onclick="alert('成本重置')"><span class="ic" style="color:#000080">🗗</span><span class="tx">成本重置Z</span></button>
+    <button class="w98 nav" onclick="alert('盤點')"><span class="ic" style="color:#c00000">🗇</span><span class="tx">盤點</span></button>
+    <button class="w98 nav" onclick="alert('進價')"><span class="ic" style="color:#c8a000">🔑</span><span class="tx">進價T</span></button>
+    <button class="w98 nav" onclick="searchGrid('inv')"><span class="ic">🔍</span><span class="tx">搜尋F</span></button>
+    <button class="w98 nav" onclick="alert('離開')"><span class="ic" style="color:#c00000">🚪</span><span class="tx">離開Q</span></button>
+  </div>
+</div>
+
+<!-- ════════════ 畫面二：銷貨訂單 ════════════ -->
+<div class="screen" id="scr-ord">
+  <div class="f6tabs"><div class="ftab on">登改刪F6</div><div class="ftab">查印F7</div></div>
+  <div style="display:flex;background:var(--cream);border:1px solid var(--silver-d);">
+    <div class="formarea" style="flex:1;border:none;" id="ordform">
+      <div class="frow">
+        <span class="lbl" style="width:96px">訂單單號</span><input class="fld" data-o="ordno" style="width:170px">
+        <span class="lbl" style="width:72px;margin-left:20px">單號日期</span><input class="fld" data-o="orddate" style="width:170px">
+        <span class="lbl" style="width:64px;margin-left:20px">業務員</span><input class="fld" data-o="sales" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">客戶編號</span><input class="fld" data-o="custno" style="width:170px">
+        <input class="fld" data-o="custname" style="width:220px">
+        <span class="lbl" style="width:72px;margin-left:20px">稅金狀況</span>
+        <select class="fld" data-o="taxtype" style="width:180px"><option>1.外加</option><option>2.內含</option><option>3.免稅</option></select>
+        <input class="fld r" data-o="taxrate" style="width:50px"><span class="lbl">%</span>
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">指送客戶</span><input class="fld" data-o="shipcust" style="width:390px">
+        <span class="lbl" style="width:72px;margin-left:20px">連絡電話</span><input class="fld" data-o="tel" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">送貨地址</span><input class="fld" data-o="addr" style="width:390px">
+        <span class="lbl" style="width:72px;margin-left:20px">是否列印</span><input class="fld red" data-o="isprint" style="width:120px">
+        <span class="lbl" style="margin-left:20px">客戶單號</span><input class="fld" data-o="custord" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">單據類別</span>
+        <select class="fld" data-o="doctype" style="width:170px"><option>1.一般銷貨</option><option>2.寄賣銷貨</option></select>
+        <span class="lbl" style="margin-left:8px">區域編號</span><input class="fld" data-o="zone" style="width:120px">
+        <span class="lbl" style="margin-left:20px">交易條件</span><input class="fld" data-o="trade" style="width:160px">
+        <span class="lbl" style="margin-left:20px">急件</span>
+        <select class="fld" data-o="urgent" style="flex:1"><option></option><option>1.急件</option></select>
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">帳款事前折扣</span><input class="fld r" data-o="disc" style="width:80px"><span class="lbl">%</span>
+        <span class="lbl" style="margin-left:20px">備註</span><input class="fld" data-o="note" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl red" style="width:96px">加工金額</span><input class="fld r" data-o="procamt" style="width:170px">
+        <span class="lbl red" style="margin-left:20px">材料金額</span><input class="fld r" data-o="matamt" style="width:170px">
+      </div>
+      <div class="frow">
+        <span class="lbl red" style="width:96px">注意事項</span>
+        <label class="cb"><input type="checkbox" data-o="cb1"> 測試硬度</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-o="cb2"> 禁用尾修</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-o="cb3"> 客戶指定用料</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-o="cb4"> 業務指定用料</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-o="cb5"> 限定用料</label>
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">派工備註</span><input class="fld" data-o="wnote" style="width:390px">
+        <span class="lbl" style="width:72px;margin-left:20px">銷貨備註</span><input class="fld" data-o="snote" style="flex:1">
+      </div>
+    </div>
+    <div class="totpanel">
+      <div class="totrow"><span class="tl lbl dred">合　　計:</span><input class="tv" data-o="total"></div>
+      <div class="totrow"><span class="tl lbl dred">稅　　金:</span><input class="tv" data-o="tax"></div>
+      <div class="totrow"><span class="tl lbl dred">總　　計:</span><input class="tv" data-o="grand"></div>
+      <div class="totrow"><span class="tl lbl dred">總計筆數:</span><input class="tv" data-o="cnt"></div>
+      <div class="totrow"><span class="tl lbl dred">合計重量:</span><input class="tv" data-o="totwt"></div>
+      <div class="totrow"><span class="tl lbl blue">利潤金額</span><input class="tv" data-o="profit"></div>
+      <div class="totrow"><span class="tl lbl blue">　利潤%</span><input class="tv" data-o="profitp"></div>
+    </div>
+  </div>
+  <div class="f6tabs" style="height:21px">
+    <div class="ftab on" id="ordtab-main" onclick="setView('ord','main')">訂單明細</div>
+    <div class="ftab" id="ordtab-sub" onclick="setView('ord','sub')">製程明細</div>
+  </div>
+  <div class="splitarea fill" id="ordarea"></div>
+  <div class="btnbar">
+    <button class="w98 nav" onclick="nav('ord',-9999)"><span class="ic" style="color:#000080">|◀</span><span class="tx">首筆H</span></button>
+    <button class="w98 nav" onclick="nav('ord',-1)"><span class="ic" style="color:#000080">◀</span><span class="tx">往前↑</span></button>
+    <button class="w98 nav" onclick="nav('ord',1)"><span class="ic" style="color:#000080">▶</span><span class="tx">往後↓</span></button>
+    <button class="w98 nav" onclick="nav('ord',9999)"><span class="ic" style="color:#000080">▶|</span><span class="tx">末筆E</span></button>
+    <button class="w98 nav" onclick="addRow('ord')"><span class="ic" style="color:#008000">＋</span><span class="tx">新增I</span></button>
+    <button class="w98 nav" onclick="delRow('ord')"><span class="ic" style="color:#c00000">━</span><span class="tx">刪除D</span></button>
+    <button class="w98 nav" onclick="alert('進入修改模式：直接點選欄位即可編輯')"><span class="ic" style="color:#008000">✎</span><span class="tx">修改M</span></button>
+    <button class="w98 nav" disabled><span class="ic">▣</span><span class="tx">確認S</span></button>
+    <button class="w98 nav" disabled><span class="ic">✕</span><span class="tx">取消Z</span></button>
+    <span class="sp"></span>
+    <span class="stat">待料中</span>
+    <button class="w98 nav" style="width:58px" onclick="alert('批量製程')"><span class="ic" style="color:#0000c0">✚</span><span class="tx">批量製程</span></button>
+    <button class="w98 nav" style="width:58px" onclick="alert('批改指送')"><span class="ic" style="color:#008000">✎</span><span class="tx">批改指送</span></button>
+    <button class="w98 nav" onclick="alert('開檔')"><span class="ic" style="color:#c8a000">🖨</span><span class="tx">開檔</span></button>
+    <button class="w98 nav" style="width:52px" onclick="alert('轉請購')"><span class="ic" style="color:#000080">🗗</span><span class="tx">轉請購</span></button>
+    <button class="w98 nav" style="width:52px" onclick="alert('轉派工')"><span class="ic" style="color:#000080">🗗</span><span class="tx">轉派工</span></button>
+    <button class="w98 nav" onclick="alert('條文')"><span class="ic" style="color:#c8a000">🔑</span><span class="tx">條文L</span></button>
+    <button class="w98 nav" onclick="alert('利潤')"><span class="ic" style="color:#c00000">◉</span><span class="tx">利潤B</span></button>
+    <button class="w98 nav" onclick="searchGrid('ord')"><span class="ic">🔍</span><span class="tx">搜尋F</span></button>
+    <button class="w98 nav" onclick="alert('離開')"><span class="ic" style="color:#c00000">🚶</span><span class="tx">離開Q</span></button>
+  </div>
+</div>
+
+<!-- ════════════ 畫面三：派工 ════════════ -->
+<div class="screen" id="scr-disp">
+  <div class="f6tabs"><div class="ftab on">登改刪F6</div><div class="ftab">查印F7</div></div>
+  <div style="display:flex;background:var(--cream);border:1px solid var(--silver-d);">
+    <div class="formarea" style="flex:1;border:none;" id="dispform">
+      <div class="frow">
+        <span class="lbl" style="width:96px">派工單號</span><input class="fld" data-d="dispno" style="width:220px">
+        <span class="lbl" style="width:72px;margin-left:20px">單號日期</span><input class="fld" data-d="dispdate" style="width:220px">
+        <span class="lbl" style="margin-left:20px">單據類別</span>
+        <select class="fld" data-d="doctype" style="flex:1"><option>1.廠內派工</option><option>2.委外派工</option></select>
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">協力廠商</span><input class="fld" data-d="subcon" style="width:220px">
+        <span class="lbl" style="width:72px;margin-left:20px"></span><input class="fld" data-d="subname" style="width:220px">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">刀數損耗</span><input class="fld r" data-d="blade" style="width:196px"><span class="lbl">mm</span>
+        <span class="lbl" style="width:72px;margin-left:6px">機台編號</span><input class="fld" data-d="machine" style="width:220px">
+        <span class="lbl" style="margin-left:20px">廠區編號</span><input class="fld" data-d="plant" style="width:200px">
+        <span class="lbl" style="margin-left:20px">是否列印</span><input class="fld red" data-d="isprint" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">備註</span><input class="fld" data-d="note" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl red" style="width:96px">注意事項</span>
+        <label class="cb"><input type="checkbox" data-d="dcb1"> 測試硬度</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-d="dcb2"> 禁用尾修</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-d="dcb3"> 客戶指定用料</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-d="dcb4"> 業務指定用料</label>
+        <label class="cb" style="margin-left:40px"><input type="checkbox" data-d="dcb5"> 限定用料</label>
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px;align-self:flex-start">派工備註</span>
+        <textarea class="fld" data-d="wnote" style="flex:1;height:62px;resize:none"></textarea>
+      </div>
+    </div>
+    <div class="totpanel" id="disptot">
+      <div class="totrow"><span class="tl lbl dred" style="width:112px">預估領料重量:</span><input class="tv" data-d="tw1"></div>
+      <div class="totrow"><span class="tl lbl dred" style="width:112px">預估入庫重量:</span><input class="tv" data-d="tw2"></div>
+      <div class="totrow"><span class="tl lbl dred" style="width:112px">預估餘料重量:</span><input class="tv" data-d="tw3"></div>
+      <div class="totrow"><span class="tl lbl dred" style="width:112px">損耗重量:</span><input class="tv" data-d="tw4"></div>
+      <div class="totrow"><span class="tl lbl dred" style="width:112px">差異重量:</span><input class="tv" data-d="tw5"></div>
+    </div>
+  </div>
+  <div class="f6tabs" style="height:21px"><div class="ftab on">派工明細</div><div class="ftab">製程明細</div></div>
+  <div class="gridwrap" style="height:140px;flex:none;border-bottom:3px solid var(--silver)" id="dispupwrap"></div>
+  <div class="gridwrap fill" id="dispdnwrap"></div>
+  <div class="btnbar">
+    <button class="w98 nav" onclick="dispNav(-9999)"><span class="ic" style="color:#000080">|◀</span><span class="tx">首筆H</span></button>
+    <button class="w98 nav" onclick="dispNav(-1)"><span class="ic" style="color:#000080">◀</span><span class="tx">往前↑</span></button>
+    <button class="w98 nav" onclick="dispNav(1)"><span class="ic" style="color:#000080">▶</span><span class="tx">往後↓</span></button>
+    <button class="w98 nav" onclick="dispNav(9999)"><span class="ic" style="color:#000080">▶|</span><span class="tx">末筆E</span></button>
+    <button class="w98 nav" onclick="dispAdd()"><span class="ic" style="color:#008000">＋</span><span class="tx">新增I</span></button>
+    <button class="w98 nav" onclick="dispDel()"><span class="ic" style="color:#c00000">━</span><span class="tx">刪除D</span></button>
+    <button class="w98 nav" onclick="alert('進入修改模式：直接點選欄位即可編輯')"><span class="ic" style="color:#008000">✎</span><span class="tx">修改M</span></button>
+    <button class="w98 nav" disabled><span class="ic">▣</span><span class="tx">確認S</span></button>
+    <button class="w98 nav" disabled><span class="ic">✕</span><span class="tx">取消Z</span></button>
+    <span class="sp"></span>
+    <button class="w98 nav" style="width:58px" onclick="alert('製程委外')"><span class="ic" style="color:#c00000">🖨</span><span class="tx">製程委外</span></button>
+    <button class="w98 nav" style="width:58px" onclick="alert('製程回報')"><span class="ic" style="color:#606060">⚙</span><span class="tx">製程回報</span></button>
+    <button class="w98 nav" style="width:58px" onclick="alert('製作明細')"><span class="ic" style="color:#000080">🗗</span><span class="tx">製作明細</span></button>
+    <button class="w98 nav" style="width:58px" onclick="alert('批次入倉')"><span class="ic" style="color:#c8a000">✎</span><span class="tx">批次入倉</span></button>
+    <button class="w98 nav" onclick="dispSearch()"><span class="ic">🔍</span><span class="tx">搜尋F</span></button>
+    <button class="w98 nav" onclick="alert('離開')"><span class="ic" style="color:#c00000">🚶</span><span class="tx">離開Q</span></button>
+  </div>
+</div>
+
+</div>
+<script>
+/* ════════════════ 預設資料（依截圖 100% 轉錄） ════════════════ */
+const LS_KEY='jufeng_erp_v1';
+const DEF={
+ inv:{
+  view:'main',
+  header:{filter:'',qgt:false,qeq:false,qlt:false,wgt:false,weq:false,wlt:false,
+   wh:'炬鋒整料倉庫',steel:'S45C',vendor:'豐興',pname:'S45C',ptype:'1.一般',spec:'23.00x  0.00',
+   formula:'R',sg:'0.000',unitw:'0.000',qty:'42',wt:'819.51',unit:'KG',avgp:'',wavg:'',sell:'0.0',
+   cbase:'1.重量',ctot:'',loc:'',oq:'0',pq:'0',eq:'42',ow:'0.00',pw:'0.00',ew:'819.51',
+   dq:'0',aq:'42',dw:'0.00',aw:'819.51',note:'',mdate:'114年07月15日'},
+  sel:11,
+  rows:[
+   ['炬鋒整料倉庫','S45C','S45C','豐興','19.00x  0.00','1.一般','R','26','396.00','KG','','0.0','1.重量','','','','','114年08月27日','0','0.00','0','0.00','26','396.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','豐興','20.00x  0.00','1.一般','R','85','1,245.29','KG','','0.0','1.重量','','','','','114年08月27日','0','0.00','0','0.00','85','1,245.29',''],
+   ['炬鋒整料倉庫','S45C','S45C','中鋼','20.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','0.000','','107年12月23日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','20.00x  0.00','1.一般','X','0','0.00','KG','','0.0','1.重量','','','0.000','','111年01月23日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','','','21.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','114年07月30日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','','豐興','21.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','114年09月01日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','21.00x  0.00','1.一般','R','83','1,343.00','KG','','0.0','1.重量','','','','','106年01月11日','0','0.00','0','0.00','83','1,343.00',''],
+   ['炬鋒整料倉庫','S45C','','','22.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','114年08月01日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','豐興','22.00x  0.00','1.一般','R','69','1,287.52','KG','','0.0','1.重量','','','','','114年09月03日','0','0.00','0','0.00','69','1,287.52',''],
+   ['炬鋒整料倉庫','S45C','S45C','中鋼','22.00x  0.00','1.一般','R','12','215.01','KG','','0.0','1.重量','','','','','114年06月27日','0','0.00','0','0.00','12','215.01',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','22.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','114年07月23日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','豐興','23.00x  0.00','1.一般','R','42','819.51','KG','','0.0','1.重量','','','','','114年07月15日','0','0.00','0','0.00','42','819.51',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','23.00x  0.00','1.一般','R','43','842.10','KG','','0.0','1.重量','','','','','114年04月07日','0','0.00','0','0.00','43','842.10',''],
+   ['炬鋒整料倉庫','S45C','S45C','豐興','24.00x  0.00','1.一般','R','10','-763.70','KG','','0.0','1.重量','','','','','114年12月01日','0','0.00','0','0.00','10','-763.70',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','24.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','113年09月23日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','','25.00x  0.00','1.一般','R','0','0.00','PCS','','0.0','2.數量','','0.000','0.000','','107年07月23日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','','日本神戶','25.00x  0.00','1.一般','R','56','1,296.00','KG','','0.0','1.重量','','','0.000','','114年08月28日','0','0.00','0','0.00','56','1,296.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','韓國世亞','25.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','108年01月22日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','韓國現代','25.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','109年10月22日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','豐興','25.00x  0.00','1.一般','R','3','78.00','KG','','0.0','1.重量','','','','','114年08月05日','0','0.00','0','0.00','3','78.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','中鋼','25.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','0.000','','108年12月24日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','25.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','113年05月29日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','','','26.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','106年01月11日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','印度','26.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','0.000','','114年03月18日','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','','日本神戶','26.00x  0.00','1.一般','R','177','4,422.30','KG','','0.0','1.重量','','','0.000','','114年07月17日','0','0.00','0','0.00','177','4,422.30',''],
+   ['炬鋒整料倉庫','S45C','S45C','韓國世亞','26.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','豐興','26.00x  0.00','1.一般','R','56','1,396.10','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','56','1,396.10',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','26.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','','','27.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','日本神戶','27.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','日本神戶','27.00x  0.00','1.一般','R','27','750.30','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','27','750.30',''],
+   ['炬鋒整料倉庫','S45C','S45C','豐興','27.00x  0.00','1.一般','R','68','1,844.18','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','68','1,844.18',''],
+   ['炬鋒整料倉庫','S45C','S45C','中鋼','27.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','威致','27.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','大陸','28.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00',''],
+   ['炬鋒整料倉庫','S45C','S45C','新日鐵','28.00x  0.00','1.一般','R','0','0.00','KG','','0.0','1.重量','','','','','','0','0.00','0','0.00','0','0.00','']
+  ],
+  batches:{
+   '11':[['','0.00','42','819.51','KG','A001 大鋼友','','','19,013','','819.51','42','0.00','0']]
+  },
+  procs:{}
+ },
+ ord:{
+  view:'main',
+  header:{ordno:'114090094',orddate:'114年09月04日',sales:'',custno:'AA213_2',custname:'隆煒特殊鋼有限公司',
+   taxtype:'1.外加',taxrate:'5',shipcust:'',tel:'04-25234811',addr:'台中市豐原區南陽路523巷8號',
+   isprint:'否',custord:'',doctype:'1.一般銷貨',zone:'2',trade:'現金不扣%',urgent:'',disc:'0',note:'',
+   procamt:'0',matamt:'3,795',cb1:false,cb2:false,cb3:false,cb4:false,cb5:false,wnote:'',snote:'',
+   total:'3,795',tax:'190',grand:'3,985',cnt:'',totwt:'185.1',profit:'',profitp:''},
+  sel:0,
+  rows:[
+   ['0010','2.派工','','1.未開工','鋸切:未開工。','0.否','1.系統','0','S45C','大陸','S45C','','0.00x  0.00','','50.00x6000.00','20.5','2','1.整支','R','1.重量','185.1','1.重量','KG','6.業助','','','','Y.是','0.0','0.0','3,795','0','3,795','2','185.1','0.0','0.0','0','3,795','2','100.00','','1.一般','N.否','0.0','0','91','3,704','20.0','5.未設定','0.0','0.0','','','大陸','50.00x6000.00','S45C','S45C','','自取','','N.否','0.1','2.40','']
+  ],
+  procs:{
+   '0':[['0010','1.廠內加工','1A','','','鋸切','','外徑70以下','','','','00:00:00','2','','1.系統','N.否','Y.是','0','2','00:00:00']]
+  }
+ },
+ disp:{
+  header:{dispno:'114090226',dispdate:'114年09月04日',doctype:'1.廠內派工',subcon:'0',subname:'炬鋒',
+   blade:'3.00',machine:'',plant:'',isprint:'是',note:'',
+   dcb1:false,dcb2:false,dcb3:false,dcb4:false,dcb5:false,wnote:'',
+   tw1:'0.00',tw2:'185.10',tw3:'0.00',tw4:'0.10',tw5:'-185.20'},
+  selUp:0,selDn:0,
+  up:[],
+  dn:[['0010','0010','0.否','114090094','','','','大陸','S45C','S45C','50.00x6000.00','S45C','大陸','S45C','50.00x6000.00','','0.00x  0.00','','1.一般','R','2','185.1','KG','0.0','1.重量','0.0','0.0','','1.重量','0.0','0','','Y.是','','AA213_2 隆煒特殊鋼有限公司','','自取','2','185.1','0.否','','0.1','','1.整支','','Z','N.否']]
+ }
+};
+/* 庫存主檔補用料欄位(25~28)：將不足的列補空字串 */
+DEF.inv.rows.forEach(r=>{while(r.length<29)r.push('');});
+/* ════════════════ 欄位定義 ════════════════ */
+const INV_COLS=[
+ ['倉庫編號',118,'l'],['鋼種',56,'l'],['品名',56,'l'],['廠別編號',86,'l'],
+ ['厚度 x 寬/徑 x 長度',128,'r'],['產品種類',62,'l'],['公式',38,'l'],
+ ['合計數量',66,'r'],['合計重量',78,'r'],['單位',40,'l'],['平均進價',60,'r'],['售價',46,'r'],
+ ['成本基準',62,'l'],['合計成本',62,'r'],['比重',50,'r'],['單位重',56,'r'],['倉位',46,'l'],
+ ['異動日期',100,'l'],['訂單待出數量',82,'r'],['訂單待出重量',82,'r'],
+ ['採購待進數量',82,'r'],['採購待進重量',82,'r'],['預估結餘數量',82,'r'],['預估結餘重量',90,'r'],['備註',140,'l'],
+ ['用料鋼種',76,'l'],['用料品名',76,'l'],['用料規格',110,'l'],['用料重量',80,'r']
+];
+/* 製程主檔（依截圖） */
+const PROC2_COLS=[
+ ['項次',44,'l','#b9c6e2',''],['製程編號',88,'l','#b9c6e2','#c00000'],['製程名稱',96,'l','#b9c6e2','#c00000'],
+ ['內容',110,'l','#b9c6e2',''],['性質類別',96,'l','#b9c6e2',''],['預估工時',94,'r','#b9c6e2',''],
+ ['加工時間',90,'r','#b9c6e2',''],['加工單價',90,'r','#b9c6e2',''],['加工金額',90,'r','#b9c6e2',''],
+ ['準備時間',96,'r','#b9c6e2',''],['準備成本',90,'r','#b9c6e2',''],['廠商編號',108,'l','#b9c6e2',''],
+ ['工作站編號',110,'l','#b9c6e2',''],['備註',520,'l','#b9c6e2',''],['機台編號',110,'l','#b9c6e2','']
+];
+/* [名稱, 寬, 對齊, 表頭底色, 表頭文字色] */
+const ORD_COLS=[
+ ['項次',44,'l','',''],['狀態',64,'l','#c00000','#fff'],['急件',40,'l','#c00000','#fff'],
+ ['生產進度',92,'l','#8e9fd6',''],['製程進度',118,'l','#8e9fd6',''],
+ ['結案',44,'l','',''],['派結',58,'l','',''],['未派數量',66,'r','',''],
+ ['鋼種',56,'l','',''],['廠別編號',70,'l','',''],['品名',56,'l','',''],['備註',70,'l','',''],
+ ['實重尺寸',96,'r','',''],['客戶貨品編號',96,'l','',''],
+ ['厚度 x 寬/徑 x 長度',128,'r','',''],['材料單價',64,'r','',''],['數量',46,'r','',''],
+ ['切法',64,'l','',''],['公式',38,'l','',''],['計價基準',64,'l','',''],['重量',60,'r','',''],
+ ['成本基準',64,'l','',''],['單位',40,'l','',''],['單價類別',64,'l','',''],['交貨日期',86,'l','',''],
+ ['成交訂單路徑',92,'l','',''],['報價單別',64,'l','',''],['是否派工',60,'l','',''],
+ ['加工單價',80,'r','',''],['未派重量',80,'r','',''],['材料金額',92,'r','',''],['加工金額',92,'r','',''],
+ ['金額',92,'r','',''],['未交數量',76,'r','',''],['未交重量',80,'r','',''],['成本單價',80,'r','',''],
+ ['加工成本單價',88,'r','',''],['成本金額',76,'r','#f4b8d8',''],['利潤金額',92,'r','#f4b8d8',''],
+ ['區域編號',56,'l','#f4b8d8',''],['利潤%',62,'r','#f4b8d8',''],['加工途程',104,'l','#a8c4e0',''],
+ ['產品種類',62,'l','',''],['是否請購',60,'l','',''],['最低售價',66,'r','#a8d8a8',''],
+ ['折扣金額',66,'r','#f0a890',''],['設定成本毛利',86,'r','#d4e157',''],['設定成本金額',90,'r','#d4e157',''],
+ ['設定成本單價',90,'r','#d4e157',''],['售價落點',72,'l','#f0a890',''],
+ ['優惠售價',64,'r','#a8d8a8',''],['標準售價',64,'r','#a8d8a8',''],
+ ['進貨日期',80,'l','#a8dce0',''],['請購日期',86,'l','#c8e8c8',''],
+ ['客戶廠別',70,'l','#d8c8e8',''],['客戶規格',110,'r','#d8c8e8',''],['客戶品名',76,'l','#d8c8e8',''],['客戶鋼種',64,'l','#d8c8e8',''],
+ ['製作明細',96,'l','',''],['指送客戶名稱',128,'l','','#c00000'],['指送客戶編號',96,'l','','#c00000'],
+ ['附材証',56,'l','','#c00000'],['損耗重量',76,'r','#a8d8b8',''],['設定成本毛利率%',110,'r','#e8e840',''],['客戶單號',150,'l','#a8c4e0','']
+];
+/* 批號分頁：右側批號格 */
+const BAT_COLS=[
+ ['批號',150,'l'],['長度',80,'r'],['數量',56,'r'],['重量',90,'r'],['單位',44,'l'],
+ ['進貨廠商',120,'l'],['批號進價',230,'l'],['備註',56,'l'],['成本金額',96,'r'],['廠牌說明',96,'l'],
+ ['小計可用重量',110,'r'],['小計可用數量',110,'r'],['已派重量',88,'r'],['已派數量',88,'r']
+];
+/* 製程明細分頁：右側製程格 */
+const PROC_COLS=[
+ ['項次',44,'l'],['製程',86,'l'],['製程編號',66,'l'],['接單日期',92,'l'],['完工日期',118,'l'],
+ ['製程名稱',72,'l'],['製程說明',64,'l'],['工作站編號',96,'l'],['機台編號',76,'l'],['廠商編號',76,'l'],
+ ['客戶委外廠商編號',112,'l'],['預估工時',82,'r'],['數量',56,'r'],['備註',56,'l'],['派結',56,'l'],
+ ['是否完工',62,'l'],['已派工',56,'l'],['未派數量',76,'r'],['未完工數量',84,'r'],['完工工時',82,'r']
+];
+/* 左側窗格欄位：[名稱, 寬, 對應主檔欄index, 對齊] */
+const INVL_COLS=[
+ ['倉庫編號',76,0,'l'],['鋼種',46,1,'l'],['廠別',46,3,'l'],['產品種',52,5,'l'],
+ ['厚度 x 寬/徑 x 長度',100,4,'r'],['合計數',52,7,'r'],['合計重量',76,8,'r']
+];
+const ORDL_COLS=[
+ ['項次',44,0,'l'],['鋼種',56,8,'l'],['品名',64,10,'l'],['廠別編號',70,9,'l'],
+ ['產品種類',66,42,'l'],['厚度 x 寬/徑 x 長度',112,14,'r']
+];
+/* 派工：上格(領料明細) */
+const DISP_UP_COLS=[
+ ['項次',44,'l'],['派工序號',70,'l'],['出倉編號',90,'l'],['入倉編號',90,'l'],['鋼種',56,'l'],
+ ['廠別編號',90,'l'],['品名',68,'l'],['厚度 x 寬/徑 x 長度',170,'r'],['批號',70,'l'],['產品種類',86,'l'],
+ ['公式',96,'l'],['數量',96,'r'],['重量',110,'r'],['單位',44,'l'],['成本基準',92,'l'],['材料單價',116,'r'],
+ ['領料未回數量',116,'r'],['領料未回重量',116,'r'],['結案',44,'l'],['備註',190,'l'],['廠牌說明',170,'l']
+];
+/* 派工：下格(派工明細) */
+const DISP_DN_COLS=[
+ ['項次',44,'l'],['派工序號',60,'l'],['完工結案',64,'l'],['訂單單號',90,'l'],['合約單號',70,'l'],
+ ['工序編號',70,'l'],['入倉編號',70,'l'],
+ ['客戶廠別',70,'l','#d8c8e8'],['客戶鋼種',64,'l','#d8c8e8'],['客戶品名',64,'l','#d8c8e8'],['客戶規格',110,'r','#d8c8e8'],
+ ['鋼種',50,'l'],['廠別編號',70,'l'],['品名',56,'l'],['厚度 x 寬/徑 x 長度',120,'r'],['派工內容',86,'l'],
+ ['實重尺寸',96,'r'],['批號',56,'l'],['產品種類',62,'l'],['公式',38,'l'],['數量',46,'r'],['重量',60,'r'],
+ ['單位',40,'l'],['單價',56,'r'],['計價基準',70,'l'],['材料單價',84,'r'],['加工單價',84,'r'],['加工途程',76,'l'],
+ ['成本基準',70,'l'],['成本單價',84,'r'],['加工金額',92,'r'],['包裝方式',110,'l'],['銷貨',44,'l'],['交貨日期',80,'l'],
+ ['客戶編號',120,'l'],['指送客戶編號',96,'l'],['指送客戶名稱',130,'l'],['未回數量',100,'r'],['未回重量',110,'r'],
+ ['結案',44,'l'],['備註',56,'l'],['損耗重量',90,'r'],['廠牌說明',80,'l'],['切法',90,'l'],['急件',44,'l'],
+ ['區域編號',70,'l'],['附材証',56,'l']
+];
+const ORD_EMPTY_ROWS=14;
+const SUB_EMPTY_ROWS=16;
+const SUBSEL={inv:0,ord:0};
+/* ════════════════ 資料載入/儲存 ════════════════ */
+let DATA;
+try{DATA=JSON.parse(localStorage.getItem(LS_KEY))||null;}catch(e){DATA=null;}
+if(!DATA||!DATA.inv||!DATA.ord)DATA=JSON.parse(JSON.stringify(DEF));
+/* 舊版資料升級：補批號/製程/新庫存列 */
+if(!DATA.inv.view)DATA.inv.view='main';
+if(!DATA.ord.view)DATA.ord.view='main';
+if(!DATA.inv.batches)DATA.inv.batches=JSON.parse(JSON.stringify(DEF.inv.batches));
+if(!DATA.ord.procs)DATA.ord.procs=JSON.parse(JSON.stringify(DEF.ord.procs));
+if(DATA.inv.rows.length===25)DATA.inv.rows.push(...JSON.parse(JSON.stringify(DEF.inv.rows.slice(25))));
+if(!DATA.inv.procs)DATA.inv.procs={};
+if(!DATA.disp)DATA.disp=JSON.parse(JSON.stringify(DEF.disp));
+DATA.inv.rows.forEach(r=>{while(r.length<29)r.push('');});
+let saveTimer=null;
+function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem(LS_KEY,JSON.stringify(DATA));},300);}
+function resetAll(){if(confirm('確定要清除所有編輯，還原成截圖原始資料？')){localStorage.removeItem(LS_KEY);location.reload();}}
+/* ════════════════ 工具列圖示 ════════════════ */
+(function(){
+ const chars='庫成資調合保進運費售底壓報合訂運諸銷同運板入領盤月月雜證證簽證派回醫醫溜援刀詞桶';
+ const cols=['#c00000','#c00000','#c00000','#c00000','#c00000','#c00000','#0000c0','#0000c0','#0000c0','#008000','#008000','#008000','#008000','#008000','#c06000','#c06000','#c06000','#c06000','#c06000','#c06000','#606060','#0000c0','#008080','#800080','#800080','#800080','#c00000','#008000','#008000','#008000','#008000','#008000','#c00000','#c00000','#800080','#808000','#0000c0','#0000c0','#c06000'];
+ let h='';
+ for(let i=0;i<chars.length;i++){h+='<button class="w98 tico" style="background:'+cols[i%cols.length]+'">'+chars[i]+'</button>';}
+ h+='<span class="tsep"></span>';
+ '試歷計預印傳郵訊'.split('').forEach(c=>{h+='<button class="w98 tico" style="background:#3060c0">'+c+'</button>';});
+ document.getElementById('icons').innerHTML=h;
+})();
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+/* ════════════════ 畫面區域渲染（主檔 / 子分頁） ════════════════ */
+function renderArea(kind){
+ const view=DATA[kind].view;
+ document.getElementById(kind+'tab-main').classList.toggle('on',view==='main');
+ document.getElementById(kind+'tab-sub').classList.toggle('on',view==='sub');
+ const tp=document.getElementById(kind+'tab-proc');
+ if(tp)tp.classList.toggle('on',view==='proc');
+ const area=document.getElementById(kind+'area');
+ if(view==='main'){
+  area.innerHTML='<div class="gridwrap" style="flex:1" id="'+kind+'gridwrap"></div>';
+  buildGrid(kind);
+ }else{
+  const w=kind==='inv'?500:444;
+  area.innerHTML='<div class="pane-l" style="width:'+w+'px" id="'+kind+'paneL"></div><div class="pane-r" id="'+kind+'paneR"></div>';
+  buildLeftPane(kind);
+  buildSubGrid(kind);
+ }
+}
+function setView(kind,v){DATA[kind].view=v;save();renderArea(kind);}
+/* ════════════════ 主格線 ════════════════ */
+function buildGrid(kind){
+ const isInv=kind==='inv';
+ const cols=isInv?INV_COLS:ORD_COLS;
+ const d=DATA[kind];
+ let w=24; cols.forEach(c=>w+=c[1]);
+ let h='<table class="grid" style="width:'+w+'px"><colgroup><col style="width:24px">';
+ cols.forEach(c=>h+='<col style="width:'+c[1]+'px">');
+ h+='</colgroup><thead><tr><th style="width:24px"></th>';
+ cols.forEach(c=>{
+  const bg=c[3]?('background:'+c[3]+';'):'';
+  const fc=c[4]?('color:'+c[4]+';'):'';
+  h+='<th style="'+bg+fc+'">'+c[0]+'</th>';
+ });
+ h+='</tr></thead><tbody>';
+ d.rows.forEach((row,r)=>{
+  const selCls=(!isInv&&r===d.sel)?' class="sel-blue"':'';
+  h+='<tr'+selCls+' data-r="'+r+'"><td class="gut">'+(r===d.sel?'►':'')+'</td>';
+  row.forEach((v,c)=>{
+   h+='<td class="'+cols[c][2]+'" contenteditable="true" spellcheck="false" data-r="'+r+'" data-c="'+c+'">'+esc(v)+'</td>';
+  });
+  h+='</tr>';
+ });
+ const empties=isInv?1:ORD_EMPTY_ROWS;
+ for(let i=0;i<empties;i++){
+  h+='<tr><td class="gut"></td>';
+  cols.forEach(()=>h+='<td></td>');
+  h+='</tr>';
+ }
+ h+='</tbody></table>';
+ const wrap=document.getElementById(kind+'gridwrap');
+ wrap.innerHTML=h;
+ wrap.querySelectorAll('td[contenteditable]').forEach(td=>{
+  td.addEventListener('input',()=>{
+   const r=+td.dataset.r,c=+td.dataset.c;
+   DATA[kind].rows[r][c]=td.textContent;
+   if(kind==='ord')recalcTotals();
+   if(isInv&&r===DATA.inv.sel)loadInvHeader();
+   save();
+  });
+  td.addEventListener('focus',()=>selectRow(kind,+td.dataset.r,false));
+ });
+}
+/* ════════════════ 左側窗格（批號/製程的主檔簡表） ════════════════ */
+function buildLeftPane(kind){
+ const cols=kind==='inv'?INVL_COLS:ORDL_COLS;
+ const blue=kind==='ord';
+ const d=DATA[kind];
+ let w=20; cols.forEach(c=>w+=c[1]);
+ let h='<table class="grid" style="width:'+w+'px"><colgroup><col style="width:20px">';
+ cols.forEach(c=>h+='<col style="width:'+c[1]+'px">');
+ h+='</colgroup><thead><tr><th'+(blue?' class="bl"':'')+' style="width:20px"></th>';
+ cols.forEach(c=>h+='<th'+(blue?' class="bl"':'')+'>'+c[0]+'</th>');
+ h+='</tr></thead><tbody>';
+ d.rows.forEach((row,r)=>{
+  const selCls=r===d.sel?' class="sel-blue"':'';
+  h+='<tr'+selCls+' data-r="'+r+'"><td class="gut">'+(r===d.sel?'►':'')+'</td>';
+  cols.forEach(c=>{
+   h+='<td class="'+c[3]+'" contenteditable="true" spellcheck="false" data-r="'+r+'" data-c="'+c[2]+'">'+esc(row[c[2]])+'</td>';
+  });
+  h+='</tr>';
+ });
+ for(let i=0;i<3;i++){h+='<tr><td class="gut"></td>';cols.forEach(()=>h+='<td></td>');h+='</tr>';}
+ h+='</tbody></table>';
+ const pane=document.getElementById(kind+'paneL');
+ pane.innerHTML=h;
+ pane.querySelectorAll('td[contenteditable]').forEach(td=>{
+  td.addEventListener('input',()=>{
+   const r=+td.dataset.r,c=+td.dataset.c;
+   DATA[kind].rows[r][c]=td.textContent;
+   if(kind==='inv'&&r===DATA.inv.sel)loadInvHeader();
+   if(kind==='ord')recalcTotals();
+   save();
+  });
+  td.addEventListener('focus',()=>selectRow(kind,+td.dataset.r,false));
+ });
+ const tr=pane.querySelector('tr[data-r="'+d.sel+'"]');
+ if(tr&&tr.scrollIntoView)tr.scrollIntoView({block:'start'});
+}
+/* ════════════════ 右側子格線（批號 / 製程明細） ════════════════ */
+function subStore(kind){
+ if(kind==='ord')return DATA.ord.procs;
+ return DATA.inv.view==='proc'?DATA.inv.procs:DATA.inv.batches;
+}
+function buildSubGrid(kind){
+ const isProc=kind==='inv'&&DATA.inv.view==='proc';
+ const cols=kind==='ord'?PROC_COLS:(isProc?PROC2_COLS:BAT_COLS);
+ const blue=kind==='ord'||isProc;
+ const d=DATA[kind];
+ const list=subStore(kind)[String(d.sel)]||[];
+ let w=20; cols.forEach(c=>w+=c[1]);
+ let h='<table class="grid" style="width:'+w+'px"><colgroup><col style="width:20px">';
+ cols.forEach(c=>h+='<col style="width:'+c[1]+'px">');
+ h+='</colgroup><thead><tr><th'+(blue?' class="bl"':'')+' style="width:20px"></th>';
+ cols.forEach(c=>{
+  const st=(c[3]?'background:'+c[3]+';':'')+(c[4]?'color:'+c[4]+';':'');
+  h+='<th'+(blue?' class="bl"':'')+(st?' style="'+st+'"':'')+'>'+c[0]+'</th>';
+ });
+ h+='</tr></thead><tbody>';
+ const total=Math.max(list.length+SUB_EMPTY_ROWS,SUB_EMPTY_ROWS);
+ for(let r=0;r<total;r++){
+  const row=list[r];
+  const isSel=r===SUBSEL[kind]&&(!!row||(list.length===0&&r===0));
+  h+='<tr'+(isSel?' class="sel-blue"':'')+' data-r="'+r+'"><td class="gut">'+(isSel?'►':'')+'</td>';
+  cols.forEach((c,ci)=>{
+   h+='<td class="'+c[2]+'" contenteditable="true" spellcheck="false" data-r="'+r+'" data-c="'+ci+'">'+(row?esc(row[ci]):'')+'</td>';
+  });
+  h+='</tr>';
+ }
+ h+='</tbody></table>';
+ const pane=document.getElementById(kind+'paneR');
+ pane.innerHTML=h;
+ pane.querySelectorAll('td[contenteditable]').forEach(td=>{
+  td.addEventListener('input',()=>{
+   const r=+td.dataset.r,c=+td.dataset.c;
+   const store=subStore(kind);
+   const key=String(DATA[kind].sel);
+   if(!store[key])store[key]=[];
+   while(store[key].length<=r)store[key].push(cols.map(()=>'' ));
+   store[key][r][c]=td.textContent;
+   save();
+  });
+  td.addEventListener('focus',()=>{
+   SUBSEL[kind]=+td.dataset.r;
+   pane.querySelectorAll('tr[data-r]').forEach(tr=>{
+    const on=+tr.dataset.r===SUBSEL[kind]&&(subStore(kind)[String(DATA[kind].sel)]||[])[+tr.dataset.r];
+    tr.classList.toggle('sel-blue',!!on);
+    tr.querySelector('td.gut').textContent=on?'►':'';
+   });
+  });
+ });
+}
+/* ════════════════ 列選取 ════════════════ */
+function selectRow(kind,r,scroll){
+ const d=DATA[kind];
+ if(r<0)r=0; if(r>d.rows.length-1)r=d.rows.length-1;
+ const changed=d.sel!==r;
+ d.sel=r;
+ if(d.view==='main'){
+  const wrap=document.getElementById(kind+'gridwrap');
+  if(wrap)wrap.querySelectorAll('tr[data-r]').forEach(tr=>{
+   const isSel=+tr.dataset.r===r;
+   tr.querySelector('td.gut').textContent=isSel?'►':'';
+   if(kind!=='inv')tr.classList.toggle('sel-blue',isSel);
+  });
+  if(scroll){const tr=wrap&&wrap.querySelector('tr[data-r="'+r+'"]');if(tr&&tr.scrollIntoView)tr.scrollIntoView({block:'nearest'});}
+ }else{
+  const pane=document.getElementById(kind+'paneL');
+  if(pane)pane.querySelectorAll('tr[data-r]').forEach(tr=>{
+   const isSel=+tr.dataset.r===r;
+   tr.querySelector('td.gut').textContent=isSel?'►':'';
+   tr.classList.toggle('sel-blue',isSel);
+  });
+  if(scroll){const tr=pane&&pane.querySelector('tr[data-r="'+r+'"]');if(tr&&tr.scrollIntoView)tr.scrollIntoView({block:'nearest'});}
+  if(changed){SUBSEL[kind]=0;buildSubGrid(kind);}
+ }
+ if(kind==='inv')loadInvHeader();
+ save();
+}
+function nav(kind,delta){selectRow(kind,DATA[kind].sel+delta,true);}
+function shiftSubKeys(store,idx){
+ const out={};
+ Object.keys(store).forEach(k=>{
+  const n=+k;
+  if(n===idx)return;
+  out[String(n>idx?n-1:n)]=store[k];
+ });
+ return out;
+}
+function delRow(kind){
+ const d=DATA[kind];
+ if(d.rows.length===0)return;
+ if(!confirm('確定刪除第 '+(d.sel+1)+' 筆資料？'))return;
+ if(kind==='inv'){DATA.inv.batches=shiftSubKeys(DATA.inv.batches,d.sel);DATA.inv.procs=shiftSubKeys(DATA.inv.procs,d.sel);}
+ else if(kind==='ord')DATA.ord.procs=shiftSubKeys(DATA.ord.procs,d.sel);
+ d.rows.splice(d.sel,1);
+ if(d.sel>d.rows.length-1)d.sel=Math.max(0,d.rows.length-1);
+ renderArea(kind);
+ if(kind==='ord')recalcTotals();
+ if(kind==='inv')loadInvHeader();
+ save();
+}
+function addRow(kind){
+ const d=DATA[kind];
+ const cols=kind==='inv'?INV_COLS:ORD_COLS;
+ const row=cols.map(()=>'' );
+ if(kind==='ord'){row[0]=String((d.rows.length+1)*10).padStart(4,'0');}
+ d.rows.push(row);
+ d.sel=d.rows.length-1;
+ renderArea(kind);
+ selectRow(kind,d.sel,true);
+ save();
+}
+function searchGrid(kind){
+ const kw=prompt('搜尋F：請輸入關鍵字');
+ if(!kw)return;
+ const d=DATA[kind];
+ const start=(d.sel+1)%d.rows.length;
+ for(let i=0;i<d.rows.length;i++){
+  const r=(start+i)%d.rows.length;
+  if(d.rows[r].some(v=>String(v).includes(kw))){selectRow(kind,r,true);return;}
+ }
+ alert('找不到符合「'+kw+'」的資料');
+}
+/* ════════════════ 庫存表頭 ↔ 選取列 連動 ════════════════ */
+const INV_MAP={steel:1,pname:2,vendor:3,spec:4,ptype:5,formula:6,qty:7,wt:8,unit:9,avgp:10,sell:11,cbase:12,ctot:13,sg:14,unitw:15,loc:16,mdate:17,oq:18,ow:19,pq:20,pw:21,eq:22,ew:23,note:24,wh:0,msteel:25,mpname:26,mspec:27,mwt:28};
+function loadInvHeader(){
+ const d=DATA.inv,row=d.rows[d.sel];
+ if(!row)return;
+ for(const[k,c]of Object.entries(INV_MAP)){
+  const el=document.querySelector('#invform [data-h="'+k+'"]');
+  if(el&&el.type!=='checkbox')el.value=row[c];
+ }
+ const set=(k,v)=>{const el=document.querySelector('#invform [data-h="'+k+'"]');if(el)el.value=v;};
+ set('aq',row[7]);set('aw',row[8]);set('dq','0');set('dw','0.00');
+ d.header.qty=row[7];
+}
+function bindInvHeader(){
+ document.querySelectorAll('#invform [data-h]').forEach(el=>{
+  const k=el.dataset.h;
+  if(el.type==='checkbox'){
+   el.checked=!!DATA.inv.header[k];
+   el.addEventListener('change',()=>{DATA.inv.header[k]=el.checked;save();});
+   return;
+  }
+  if(DATA.inv.header[k]!==undefined)el.value=DATA.inv.header[k];
+  el.addEventListener('input',()=>{
+   DATA.inv.header[k]=el.value;
+   const c=INV_MAP[k];
+   if(c!==undefined&&DATA.inv.rows[DATA.inv.sel]){
+    DATA.inv.rows[DATA.inv.sel][c]=el.value;
+    const td=document.querySelector('#invarea td[data-r="'+DATA.inv.sel+'"][data-c="'+c+'"]');
+    if(td&&td.textContent!==el.value)td.textContent=el.value;
+   }
+   save();
+  });
+ });
+}
+/* ════════════════ 訂單表頭 + 合計 ════════════════ */
+function bindOrdHeader(){
+ document.querySelectorAll('#ordform [data-o],.totpanel [data-o]').forEach(el=>{
+  const k=el.dataset.o;
+  if(el.type==='checkbox'){
+   el.checked=!!DATA.ord.header[k];
+   el.addEventListener('change',()=>{DATA.ord.header[k]=el.checked;save();});
+   return;
+  }
+  if(DATA.ord.header[k]!==undefined)el.value=DATA.ord.header[k];
+  el.addEventListener('input',()=>{
+   DATA.ord.header[k]=el.value;
+   if(k==='taxrate')recalcTotals();
+   save();
+  });
+ });
+}
+function num(s){return parseFloat(String(s).replace(/,/g,''))||0;}
+function fmt(n){return n.toLocaleString('en-US',{maximumFractionDigits:0});}
+function recalcTotals(){
+ const h=DATA.ord.header;
+ let amt=0,wt=0;
+ DATA.ord.rows.forEach(r=>{amt+=num(r[32]);wt+=num(r[34]);});
+ const rate=num(h.taxrate)/100;
+ const tax=Math.round(amt*rate);
+ h.total=fmt(amt);h.tax=fmt(tax);h.grand=fmt(amt+tax);
+ h.matamt=fmt(amt);
+ h.totwt=wt?String(Math.round(wt*10)/10):h.totwt;
+ ['total','tax','grand','matamt','totwt'].forEach(k=>{
+  const el=document.querySelector('[data-o="'+k+'"]');
+  if(el)el.value=h[k];
+ });
+ save();
+}
+/* ════════════════ 派工系統 ════════════════ */
+function buildDisp(){buildDispGrid('up');buildDispGrid('dn');}
+function buildDispGrid(part){
+ const cols=part==='up'?DISP_UP_COLS:DISP_DN_COLS;
+ const rows=DATA.disp[part];
+ const selKey=part==='up'?'selUp':'selDn';
+ let w=20; cols.forEach(c=>w+=c[1]);
+ let h='<table class="grid" style="width:'+w+'px"><colgroup><col style="width:20px">';
+ cols.forEach(c=>h+='<col style="width:'+c[1]+'px">');
+ h+='</colgroup><thead><tr><th class="bl" style="width:20px"></th>';
+ cols.forEach(c=>{
+  const st=(c[3]?'background:'+c[3]+';':'')+(c[4]?'color:'+c[4]+';':'');
+  h+='<th class="bl"'+(st?' style="'+st+'"':'')+'>'+c[0]+'</th>';
+ });
+ h+='</tr></thead><tbody>';
+ const empt=part==='up'?5:20;
+ const total=Math.max(rows.length+empt,empt);
+ for(let r=0;r<total;r++){
+  const row=rows[r];
+  const isSel=r===DATA.disp[selKey]&&(!!row||(rows.length===0&&r===0));
+  h+='<tr'+(isSel?' class="sel-blue"':'')+' data-r="'+r+'"><td class="gut">'+(isSel?'►':'')+'</td>';
+  cols.forEach((c,ci)=>{
+   h+='<td class="'+c[2]+'" contenteditable="true" spellcheck="false" data-r="'+r+'" data-c="'+ci+'">'+(row?esc(row[ci]):'')+'</td>';
+  });
+  h+='</tr>';
+ }
+ h+='</tbody></table>';
+ const pane=document.getElementById('disp'+part+'wrap');
+ pane.innerHTML=h;
+ pane.querySelectorAll('td[contenteditable]').forEach(td=>{
+  td.addEventListener('input',()=>{
+   const r=+td.dataset.r,c=+td.dataset.c;
+   while(rows.length<=r)rows.push(cols.map(()=>'' ));
+   rows[r][c]=td.textContent;
+   save();
+  });
+  td.addEventListener('focus',()=>{
+   DATA.disp[selKey]=+td.dataset.r;
+   pane.querySelectorAll('tr[data-r]').forEach(tr=>{
+    const rr=+tr.dataset.r;
+    const on=rr===DATA.disp[selKey]&&(!!rows[rr]||(rows.length===0&&rr===0));
+    tr.classList.toggle('sel-blue',!!on);
+    tr.querySelector('td.gut').textContent=on?'►':'';
+   });
+   save();
+  });
+ });
+}
+function dispNav(delta){
+ const d=DATA.disp;
+ let r=d.selDn+delta;
+ if(r<0)r=0;
+ if(r>d.dn.length-1)r=Math.max(0,d.dn.length-1);
+ d.selDn=r; buildDispGrid('dn'); save();
+}
+function dispAdd(){
+ const d=DATA.disp;
+ const row=DISP_DN_COLS.map(()=>'' );
+ row[0]=String((d.dn.length+1)*10).padStart(4,'0');
+ d.dn.push(row); d.selDn=d.dn.length-1;
+ buildDispGrid('dn'); save();
+}
+function dispDel(){
+ const d=DATA.disp;
+ if(!d.dn.length)return;
+ if(!confirm('確定刪除第 '+(d.selDn+1)+' 筆派工明細？'))return;
+ d.dn.splice(d.selDn,1);
+ if(d.selDn>d.dn.length-1)d.selDn=Math.max(0,d.dn.length-1);
+ buildDispGrid('dn'); save();
+}
+function dispSearch(){
+ const kw=prompt('搜尋F：請輸入關鍵字');
+ if(!kw)return;
+ const d=DATA.disp;
+ for(let i=0;i<d.dn.length;i++){
+  if(d.dn[i].some(v=>String(v).includes(kw))){d.selDn=i;buildDispGrid('dn');return;}
+ }
+ alert('找不到符合「'+kw+'」的資料');
+}
+function bindDispHeader(){
+ document.querySelectorAll('#dispform [data-d],#disptot [data-d]').forEach(el=>{
+  const k=el.dataset.d;
+  if(el.type==='checkbox'){
+   el.checked=!!DATA.disp.header[k];
+   el.addEventListener('change',()=>{DATA.disp.header[k]=el.checked;save();});
+   return;
+  }
+  if(DATA.disp.header[k]!==undefined)el.value=DATA.disp.header[k];
+  el.addEventListener('input',()=>{DATA.disp.header[k]=el.value;save();});
+ });
+}
+/* ════════════════ 模組切換 ════════════════ */
+function switchMod(m){
+ document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('on',t.dataset.mod===m));
+ ['inv','ord','disp'].forEach(x=>document.getElementById('scr-'+x).classList.toggle('on',x===m));
+}
+/* ════════════════ 啟動 ════════════════ */
+renderArea('inv');
+renderArea('ord');
+buildDisp();
+bindInvHeader();
+bindOrdHeader();
+bindDispHeader();
+loadInvHeader();
+/*v2*/
+</script>
+</body>
+</html>
