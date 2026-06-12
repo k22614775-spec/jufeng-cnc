@@ -355,9 +355,11 @@ tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;
       <div class="totrow"><span class="tl lbl dred" style="width:112px">差異重量:</span><input class="tv" data-d="tw5"></div>
     </div>
   </div>
-  <div class="f6tabs" style="height:21px"><div class="ftab on">派工明細</div><div class="ftab">製程明細</div></div>
-  <div class="gridwrap" style="height:140px;flex:none;border-bottom:3px solid var(--silver)" id="dispupwrap"></div>
-  <div class="gridwrap fill" id="dispdnwrap"></div>
+  <div class="f6tabs" style="height:21px">
+    <div class="ftab on" id="disptab-main" onclick="setDispView('main')">派工明細</div>
+    <div class="ftab" id="disptab-proc" onclick="setDispView('proc')">製程明細</div>
+  </div>
+  <div class="fill" id="disparea" style="display:flex;flex-direction:column;min-height:0"></div>
   <div class="btnbar">
     <button class="w98 nav" onclick="dispNav(-9999)"><span class="ic" style="color:#000080">|◀</span><span class="tx">首筆H</span></button>
     <button class="w98 nav" onclick="dispNav(-1)"><span class="ic" style="color:#000080">◀</span><span class="tx">往前↑</span></button>
@@ -454,9 +456,13 @@ const DEF={
    blade:'3.00',machine:'',plant:'',isprint:'是',note:'',
    dcb1:false,dcb2:false,dcb3:false,dcb4:false,dcb5:false,wnote:'',
    tw1:'0.00',tw2:'185.10',tw3:'0.00',tw4:'0.10',tw5:'-185.20'},
+  view:'main',
   selUp:0,selDn:0,
   up:[],
-  dn:[['0010','0010','0.否','114090094','','','','大陸','S45C','S45C','50.00x6000.00','S45C','大陸','S45C','50.00x6000.00','','0.00x  0.00','','1.一般','R','2','185.1','KG','0.0','1.重量','0.0','0.0','','1.重量','0.0','0','','Y.是','','AA213_2 隆煒特殊鋼有限公司','','自取','2','185.1','0.否','','0.1','','1.整支','','Z','N.否']]
+  dn:[['0010','0010','0.否','114090094','','','','大陸','S45C','S45C','50.00x6000.00','S45C','大陸','S45C','50.00x6000.00','','0.00x  0.00','','1.一般','R','2','185.1','KG','0.0','1.重量','0.0','0.0','','1.重量','0.0','0','','Y.是','','AA213_2 隆煒特殊鋼有限公司','','自取','2','185.1','0.否','','0.1','','1.整支','','Z','N.否']],
+  procs:{
+   '0':[['0010','114090094','1.廠內加工','1A','鋸切','','','2','外徑70以下','','00:00:00','','','','','','2','N.否','00:00:00','0','1.系統','N.否','']]
+  }
  }
 };
 /* 庫存主檔補用料欄位(25~28)：將不足的列補空字串 */
@@ -545,6 +551,18 @@ const DISP_DN_COLS=[
  ['結案',44,'l'],['備註',56,'l'],['損耗重量',90,'r'],['廠牌說明',80,'l'],['切法',90,'l'],['急件',44,'l'],
  ['區域編號',70,'l'],['附材証',56,'l']
 ];
+/* 派工：製程明細左窗格（對應派工明細欄index） */
+const DISPL_COLS=[
+ ['項次',44,0,'l'],['鋼種',60,11,'l'],['厚度 x 寬/徑 x 長度',150,14,'r'],['品名',60,13,'l']
+];
+/* 派工：製程明細右格 */
+const DISP_PROC_COLS=[
+ ['項次',44,'l'],['訂單單號',84,'l'],['製程',64,'l'],['製程編號',66,'l'],['製程名稱',84,'l'],
+ ['製程說明',84,'l'],['廠商編號',72,'l'],['數量',56,'r'],['工作站編號',96,'l'],['機台編號',76,'l'],
+ ['未完預估工時',100,'r','#f0a890','#c00000'],['備註',56,'l'],['接單日期',82,'l'],['接單時間',82,'l'],
+ ['完工日期',82,'l','#c8e8c8',''],['完工時間',82,'l'],['未完工數量',86,'r'],['是否完工',62,'l'],
+ ['完工工時',82,'r'],['未派數量',76,'r'],['派結',52,'l'],['是否暫停',62,'l'],['客戶委外廠商編號',124,'l']
+];
 const ORD_EMPTY_ROWS=14;
 const SUB_EMPTY_ROWS=16;
 const SUBSEL={inv:0,ord:0};
@@ -560,6 +578,8 @@ if(!DATA.ord.procs)DATA.ord.procs=JSON.parse(JSON.stringify(DEF.ord.procs));
 if(DATA.inv.rows.length===25)DATA.inv.rows.push(...JSON.parse(JSON.stringify(DEF.inv.rows.slice(25))));
 if(!DATA.inv.procs)DATA.inv.procs={};
 if(!DATA.disp)DATA.disp=JSON.parse(JSON.stringify(DEF.disp));
+if(!DATA.disp.view)DATA.disp.view='main';
+if(!DATA.disp.procs)DATA.disp.procs=JSON.parse(JSON.stringify(DEF.disp.procs));
 DATA.inv.rows.forEach(r=>{while(r.length<29)r.push('');});
 let saveTimer=null;
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem(LS_KEY,JSON.stringify(DATA));},300);}
@@ -867,7 +887,108 @@ function recalcTotals(){
  save();
 }
 /* ════════════════ 派工系統 ════════════════ */
-function buildDisp(){buildDispGrid('up');buildDispGrid('dn');}
+let DISPPROCSEL=0;
+function renderDisp(){
+ const v=DATA.disp.view;
+ document.getElementById('disptab-main').classList.toggle('on',v==='main');
+ document.getElementById('disptab-proc').classList.toggle('on',v==='proc');
+ const area=document.getElementById('disparea');
+ if(v==='main'){
+  area.innerHTML='<div class="gridwrap" style="height:140px;flex:none;border-bottom:3px solid var(--silver)" id="dispupwrap"></div><div class="gridwrap" style="flex:1" id="dispdnwrap"></div>';
+  buildDispGrid('up');buildDispGrid('dn');
+ }else{
+  area.innerHTML='<div style="display:flex;flex:1;min-height:0"><div class="pane-l" style="width:334px" id="disppaneL"></div><div class="pane-r" id="disppaneR"></div></div>';
+  buildDispLeft();buildDispProc();
+ }
+}
+function setDispView(v){DATA.disp.view=v;save();renderDisp();}
+function buildDispLeft(){
+ const cols=DISPL_COLS;
+ const rows=DATA.disp.dn;
+ let w=20; cols.forEach(c=>w+=c[1]);
+ let h='<table class="grid" style="width:'+w+'px"><colgroup><col style="width:20px">';
+ cols.forEach(c=>h+='<col style="width:'+c[1]+'px">');
+ h+='</colgroup><thead><tr><th class="bl" style="width:20px"></th>';
+ cols.forEach(c=>h+='<th class="bl">'+c[0]+'</th>');
+ h+='</tr></thead><tbody>';
+ rows.forEach((row,r)=>{
+  const selCls=r===DATA.disp.selDn?' class="sel-blue"':'';
+  h+='<tr'+selCls+' data-r="'+r+'"><td class="gut">'+(r===DATA.disp.selDn?'►':'')+'</td>';
+  cols.forEach(c=>{
+   h+='<td class="'+c[3]+'" contenteditable="true" spellcheck="false" data-r="'+r+'" data-c="'+c[2]+'">'+esc(row[c[2]])+'</td>';
+  });
+  h+='</tr>';
+ });
+ for(let i=0;i<8;i++){h+='<tr><td class="gut"></td>';cols.forEach(()=>h+='<td></td>');h+='</tr>';}
+ h+='</tbody></table>';
+ const pane=document.getElementById('disppaneL');
+ pane.innerHTML=h;
+ pane.querySelectorAll('td[contenteditable]').forEach(td=>{
+  td.addEventListener('input',()=>{
+   DATA.disp.dn[+td.dataset.r][+td.dataset.c]=td.textContent;
+   save();
+  });
+  td.addEventListener('focus',()=>{
+   const r=+td.dataset.r;
+   if(r===DATA.disp.selDn)return;
+   DATA.disp.selDn=r; DISPPROCSEL=0;
+   pane.querySelectorAll('tr[data-r]').forEach(tr=>{
+    const isSel=+tr.dataset.r===r;
+    tr.classList.toggle('sel-blue',isSel);
+    tr.querySelector('td.gut').textContent=isSel?'►':'';
+   });
+   buildDispProc(); save();
+  });
+ });
+}
+function buildDispProc(){
+ const cols=DISP_PROC_COLS;
+ const list=DATA.disp.procs[String(DATA.disp.selDn)]||[];
+ let w=20; cols.forEach(c=>w+=c[1]);
+ let h='<table class="grid" style="width:'+w+'px"><colgroup><col style="width:20px">';
+ cols.forEach(c=>h+='<col style="width:'+c[1]+'px">');
+ h+='</colgroup><thead><tr><th class="bl" style="width:20px"></th>';
+ cols.forEach(c=>{
+  const st=(c[3]?'background:'+c[3]+';':'')+(c[4]?'color:'+c[4]+';':'');
+  h+='<th class="bl"'+(st?' style="'+st+'"':'')+'>'+c[0]+'</th>';
+ });
+ h+='</tr></thead><tbody>';
+ const total=Math.max(list.length+18,18);
+ for(let r=0;r<total;r++){
+  const row=list[r];
+  const isSel=r===DISPPROCSEL&&(!!row||(list.length===0&&r===0));
+  h+='<tr'+(isSel?' class="sel-blue"':'')+' data-r="'+r+'"><td class="gut">'+(isSel?'►':'')+'</td>';
+  cols.forEach((c,ci)=>{
+   h+='<td class="'+c[2]+'" contenteditable="true" spellcheck="false" data-r="'+r+'" data-c="'+ci+'">'+(row?esc(row[ci]):'')+'</td>';
+  });
+  h+='</tr>';
+ }
+ h+='</tbody></table>';
+ const pane=document.getElementById('disppaneR');
+ pane.innerHTML=h;
+ pane.querySelectorAll('td[contenteditable]').forEach(td=>{
+  td.addEventListener('input',()=>{
+   const r=+td.dataset.r,c=+td.dataset.c;
+   const key=String(DATA.disp.selDn);
+   if(!DATA.disp.procs[key])DATA.disp.procs[key]=[];
+   const list2=DATA.disp.procs[key];
+   while(list2.length<=r)list2.push(cols.map(()=>'' ));
+   list2[r][c]=td.textContent;
+   save();
+  });
+  td.addEventListener('focus',()=>{
+   DISPPROCSEL=+td.dataset.r;
+   const list2=DATA.disp.procs[String(DATA.disp.selDn)]||[];
+   pane.querySelectorAll('tr[data-r]').forEach(tr=>{
+    const rr=+tr.dataset.r;
+    const on=rr===DISPPROCSEL&&(!!list2[rr]||(list2.length===0&&rr===0));
+    tr.classList.toggle('sel-blue',!!on);
+    tr.querySelector('td.gut').textContent=on?'►':'';
+   });
+  });
+ });
+}
+function buildDisp(){renderDisp();}
 function buildDispGrid(part){
  const cols=part==='up'?DISP_UP_COLS:DISP_DN_COLS;
  const rows=DATA.disp[part];
@@ -919,29 +1040,30 @@ function dispNav(delta){
  let r=d.selDn+delta;
  if(r<0)r=0;
  if(r>d.dn.length-1)r=Math.max(0,d.dn.length-1);
- d.selDn=r; buildDispGrid('dn'); save();
+ d.selDn=r; DISPPROCSEL=0; renderDisp(); save();
 }
 function dispAdd(){
  const d=DATA.disp;
  const row=DISP_DN_COLS.map(()=>'' );
  row[0]=String((d.dn.length+1)*10).padStart(4,'0');
- d.dn.push(row); d.selDn=d.dn.length-1;
- buildDispGrid('dn'); save();
+ d.dn.push(row); d.selDn=d.dn.length-1; DISPPROCSEL=0;
+ renderDisp(); save();
 }
 function dispDel(){
  const d=DATA.disp;
  if(!d.dn.length)return;
  if(!confirm('確定刪除第 '+(d.selDn+1)+' 筆派工明細？'))return;
+ d.procs=shiftSubKeys(d.procs,d.selDn);
  d.dn.splice(d.selDn,1);
  if(d.selDn>d.dn.length-1)d.selDn=Math.max(0,d.dn.length-1);
- buildDispGrid('dn'); save();
+ DISPPROCSEL=0; renderDisp(); save();
 }
 function dispSearch(){
  const kw=prompt('搜尋F：請輸入關鍵字');
  if(!kw)return;
  const d=DATA.disp;
  for(let i=0;i<d.dn.length;i++){
-  if(d.dn[i].some(v=>String(v).includes(kw))){d.selDn=i;buildDispGrid('dn');return;}
+  if(d.dn[i].some(v=>String(v).includes(kw))){d.selDn=i;DISPPROCSEL=0;renderDisp();return;}
  }
  alert('找不到符合「'+kw+'」的資料');
 }
