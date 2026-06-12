@@ -109,11 +109,6 @@ tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;
   <span><u>1</u>.基本資料</span><span><u>2</u>.進貨資料</span><span><u>3</u>.銷貨資料</span><span><u>4</u>.存貨資料</span><span><u>5</u>.發票資料</span><span><u>6</u>.加工管理</span><span><u>7</u>.鐵桶管理</span><span><u>8</u>.報表專區</span><span><u>9</u>.圖表分析</span><span><u>A</u>.輔助系統</span><span><u>B</u>.視窗</span><span><u>C</u>.說明</span><span><u>D</u>.網址連結</span>
   <span class="sp"></span><span class="winbtn">—</span><span class="winbtn">□</span><span class="winbtn">×</span>
 </div>
-<!-- 工具列 -->
-<div id="toolbar">
-  <select class="sunken"><option>進銷存</option></select>
-  <span id="icons"></span>
-</div>
 <!-- 模組切換 -->
 <div id="modtabs">
   <div class="mtab on" data-mod="inv" onclick="switchMod('inv')">庫存查詢</div>
@@ -584,16 +579,6 @@ DATA.inv.rows.forEach(r=>{while(r.length<29)r.push('');});
 let saveTimer=null;
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem(LS_KEY,JSON.stringify(DATA));},300);}
 function resetAll(){if(confirm('確定要清除所有編輯，還原成截圖原始資料？')){localStorage.removeItem(LS_KEY);location.reload();}}
-/* ════════════════ 工具列圖示 ════════════════ */
-(function(){
- const chars='庫成資調合保進運費售底壓報合訂運諸銷同運板入領盤月月雜證證簽證派回醫醫溜援刀詞桶';
- const cols=['#c00000','#c00000','#c00000','#c00000','#c00000','#c00000','#0000c0','#0000c0','#0000c0','#008000','#008000','#008000','#008000','#008000','#c06000','#c06000','#c06000','#c06000','#c06000','#c06000','#606060','#0000c0','#008080','#800080','#800080','#800080','#c00000','#008000','#008000','#008000','#008000','#008000','#c00000','#c00000','#800080','#808000','#0000c0','#0000c0','#c06000'];
- let h='';
- for(let i=0;i<chars.length;i++){h+='<button class="w98 tico" style="background:'+cols[i%cols.length]+'">'+chars[i]+'</button>';}
- h+='<span class="tsep"></span>';
- '試歷計預印傳郵訊'.split('').forEach(c=>{h+='<button class="w98 tico" style="background:#3060c0">'+c+'</button>';});
- document.getElementById('icons').innerHTML=h;
-})();
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 /* ════════════════ 畫面區域渲染（主檔 / 子分頁） ════════════════ */
 function renderArea(kind){
