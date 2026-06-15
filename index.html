@@ -114,6 +114,7 @@ tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;
   <div class="mtab on" data-mod="inv" onclick="switchMod('inv')">庫存查詢</div>
   <div class="mtab" data-mod="ord" onclick="switchMod('ord')">銷貨訂單</div>
   <div class="mtab" data-mod="disp" onclick="switchMod('disp')">派工</div>
+  <div class="mtab" data-mod="bom" onclick="switchMod('bom')">BOM</div>
   <span class="sp"></span>
   <button class="w98 reset" onclick="resetAll()">還原預設值</button>
 </div>
@@ -377,6 +378,80 @@ tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;
   </div>
 </div>
 
+<div class="screen" id="scr-bom">
+  <div class="f6tabs"><div class="ftab on">登改刪F6</div><div class="ftab">查印F7</div></div>
+  <div style="display:flex;align-items:center;gap:6px;background:#dfe7f2;border:1px solid var(--silver-d);border-top:none;padding:3px 8px;">
+    <span class="lbl" style="color:#000080;font-weight:bold">BOM 查詢</span>
+    <span class="lbl">鋼種</span><input class="fld" id="qsteel" style="width:90px">
+    <span class="lbl">廠別</span><input class="fld" id="qplant" style="width:90px">
+    <span class="lbl">尺寸</span><input class="fld" id="qsize" style="width:140px">
+    <button class="w98 nav" style="width:48px" onclick="bomQuery()"><span class="ic">🔍</span><span class="tx">查詢</span></button>
+    <span class="lbl" id="bompos" style="margin-left:14px;color:#c00000;font-weight:bold"></span>
+  </div>
+  <div style="background:var(--cream);border:1px solid var(--silver-d);border-top:none;">
+    <div class="formarea" style="border:none;" id="bomform">
+      <div class="frow">
+        <span class="lbl red" style="width:96px">鋼種(母件)</span><input class="fld red" data-b="steel" style="width:150px">
+        <span class="lbl" style="margin-left:14px">品名</span><input class="fld" data-b="name" style="flex:1">
+        <span class="lbl" style="width:64px;margin-left:14px">版號</span><input class="fld" data-b="ver" style="width:90px">
+      </div>
+      <div class="frow">
+        <span class="lbl red" style="width:96px">廠別</span><input class="fld red" data-b="plant" style="width:150px">
+        <span class="lbl red" style="margin-left:14px">尺寸</span><input class="fld red" data-b="size" style="width:220px">
+        <span class="lbl" style="margin-left:14px">規格</span><input class="fld" data-b="spec" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">樣本</span>
+        <select class="fld" data-b="sample" style="width:120px"><option>N.否</option><option>Y.是</option></select>
+        <span class="lbl" style="margin-left:14px">單位</span><input class="fld" data-b="unit" style="width:90px">
+        <span class="lbl" style="margin-left:14px">成本基準</span>
+        <select class="fld" data-b="costbase" style="width:110px"><option>1.重量</option><option>2.數量</option></select>
+        <span class="lbl" style="margin-left:14px">材質編號</span><input class="fld" data-b="matno" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">生產類別</span>
+        <select class="fld" data-b="prodtype" style="width:140px"><option>1.廠內生產</option><option>2.委外生產</option></select>
+        <span class="lbl" style="margin-left:14px">製程控管</span><input class="fld" data-b="proctrl" style="width:80px">
+        <span class="lbl" style="margin-left:14px">類別</span><input class="fld" data-b="cat" style="width:120px">
+        <span class="lbl" style="margin-left:14px">委外廠商</span><input class="fld" data-b="vendor" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">委外加工單價</span><input class="fld r" data-b="vprice" style="width:140px">
+        <span class="lbl" style="margin-left:14px">計價基準</span>
+        <select class="fld" data-b="pricebase" style="width:110px"><option>1.重量</option><option>2.數量</option></select>
+        <span class="lbl" style="margin-left:14px">異動日期</span><input class="fld" data-b="moddate" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl" style="width:96px">備註</span><input class="fld" data-b="note" style="flex:1">
+      </div>
+      <div class="frow">
+        <span class="lbl red" style="width:96px">用料成本合計</span><input class="fld r" data-b="matcost" style="width:140px" readonly>
+        <span class="lbl red" style="margin-left:14px">加工成本合計</span><input class="fld r" data-b="proccost" style="width:140px" readonly>
+        <span class="lbl red" style="margin-left:14px">總成本金額</span><input class="fld r" data-b="totcost" style="width:160px" readonly>
+      </div>
+    </div>
+  </div>
+  <div class="f6tabs" style="height:21px">
+    <div class="ftab on" id="bomtab-main" onclick="setBomView('main')">用料明細</div>
+    <div class="ftab" id="bomtab-proc" onclick="setBomView('proc')">製程明細</div>
+  </div>
+  <div class="fill" id="bomarea" style="display:flex;flex-direction:column;min-height:0"></div>
+  <div class="btnbar">
+    <button class="w98 nav" onclick="bomNav(-9999)"><span class="ic" style="color:#000080">|◀</span><span class="tx">首筆H</span></button>
+    <button class="w98 nav" onclick="bomNav(-1)"><span class="ic" style="color:#000080">◀</span><span class="tx">往前↑</span></button>
+    <button class="w98 nav" onclick="bomNav(1)"><span class="ic" style="color:#000080">▶</span><span class="tx">往後↓</span></button>
+    <button class="w98 nav" onclick="bomNav(9999)"><span class="ic" style="color:#000080">▶|</span><span class="tx">末筆E</span></button>
+    <button class="w98 nav" onclick="bomAdd()"><span class="ic" style="color:#008000">＋</span><span class="tx">新增母件I</span></button>
+    <button class="w98 nav" onclick="bomDel()"><span class="ic" style="color:#c00000">━</span><span class="tx">刪除母件D</span></button>
+    <button class="w98 nav" onclick="bomAddRow()"><span class="ic" style="color:#008000">✚</span><span class="tx">新增用料</span></button>
+    <button class="w98 nav" onclick="alert('進入修改模式：直接點選欄位即可編輯')"><span class="ic" style="color:#008000">✎</span><span class="tx">修改M</span></button>
+    <span class="sp"></span>
+    <button class="w98 nav" style="width:48px" onclick="alert('重新估價')"><span class="ic" style="color:#000080">▣</span><span class="tx">重新估價</span></button>
+    <button class="w98 nav" onclick="bomSearch()"><span class="ic">🔍</span><span class="tx">搜尋F</span></button>
+    <button class="w98 nav" onclick="alert('離開')"><span class="ic" style="color:#c00000">🚶</span><span class="tx">離開Q</span></button>
+  </div>
+</div>
+
 </div>
 <script>
 /* ════════════════ 預設資料（依截圖 100% 轉錄） ════════════════ */
@@ -460,6 +535,28 @@ const DEF={
   procs:{
    '0':[['0010','114090094','1.廠內加工','1A','鋸切','','','2','外徑70以下','','00:00:00','','','','','','2','N.否','00:00:00','0','1.系統','N.否','']]
   }
+ },
+ bom:{
+  view:'main',
+  sel:0,
+  list:[
+   {header:{steel:'SGCC',plant:'眾迪和',size:'0.8*436*176mm',name:'華碩GX601上蓋支架原材料SGCC0.8*436*176mm',ver:'001',spec:'',
+     sample:'N.否',unit:'pcs',costbase:'2.數量',matno:'',prodtype:'1.廠內生產',proctrl:'否',cat:'',vendor:'',
+     vprice:'0.00',pricebase:'2.數量',moddate:'112年12月01日',note:'',matcost:'0.00',proccost:'0.00',totcost:'0.00'},
+    rows:[
+     ['0010','SGCC','','0.8*436*176mm','53010216','盛業三號黑砂紋','0','0.00','0.00','0.0000','','眾迪和','0.00','','2.數量','','','0.00','0.00','','0.00','','','']
+    ],
+    procs:[]},
+   {header:{steel:'S45C',plant:'豐興',size:'50.00x6000.00',name:'S45C 圓棒 50徑 6米',ver:'001',spec:'50.00x6000.00',
+     sample:'N.否',unit:'KG',costbase:'1.重量',matno:'',prodtype:'1.廠內生產',proctrl:'否',cat:'',vendor:'',
+     vprice:'0.00',pricebase:'1.重量',moddate:'114年09月04日',note:'',matcost:'0.00',proccost:'0.00',totcost:'0.00'},
+    rows:[
+     ['0010','S45C','豐興','50.00x6000.00','S45C-50','S45C 圓棒','1','1.00','1.00','1.0000','50.00x6000.00','切料區','5.00','KG','1.重量','','','0.00','0.00','','0.00','','','']
+    ],
+    procs:[
+     ['0010','1A','鋸切','外徑70以下','1.廠內加工','0','0','0.00','0.00','0','0.00','','切料區','','']
+    ]}
+  ]
  }
 };
 /* 庫存主檔補用料欄位(25~28)：將不足的列補空字串 */
@@ -560,6 +657,24 @@ const DISP_PROC_COLS=[
  ['完工日期',82,'l','#c8e8c8',''],['完工時間',82,'l'],['未完工數量',86,'r'],['是否完工',62,'l'],
  ['完工工時',82,'r'],['未派數量',76,'r'],['派結',52,'l'],['是否暫停',62,'l'],['客戶委外廠商編號',124,'l']
 ];
+/* BOM 用料明細：鋼種+廠別+尺寸 為用料 key（紅色欄） [名稱,寬,對齊,表頭底色,表頭文字色] */
+const BOM_DETAIL_COLS=[
+ ['項次',44,'l','',''],['鋼種',60,'l','','#c00000'],['廠別',72,'l','','#c00000'],['尺寸',120,'l','','#c00000'],
+ ['子件編號',90,'l','',''],['品名',130,'l','',''],
+ ['標準用數量',80,'r','',''],['標準用總數',80,'r','',''],['單位用數量',80,'r','',''],['單位用總數',84,'r','',''],
+ ['規格',100,'l','',''],['領料工作站',96,'l','',''],['損耗率(%)',70,'r','',''],['單位',44,'l','',''],
+ ['成本基準',70,'l','',''],['材質編號',78,'l','',''],['類別',56,'l','',''],
+ ['單價',64,'r','',''],['金額',72,'r','',''],['加工單價',78,'r','',''],['加工金額',78,'r','',''],
+ ['備註',96,'l','',''],['公式編號',80,'l','',''],['CAD圖形編號',100,'l','','']
+];
+/* BOM 製程明細 */
+const BOM_PROC_COLS=[
+ ['項次',44,'l','#b9c6e2',''],['製程編號',90,'l','#b9c6e2','#c00000'],['製程名稱',100,'l','#b9c6e2','#c00000'],
+ ['內容',120,'l','#b9c6e2',''],['性質類別',96,'l','#b9c6e2',''],['預估工時',90,'r','#b9c6e2',''],
+ ['加工時間',90,'r','#b9c6e2',''],['加工單價',90,'r','#b9c6e2',''],['加工金額',90,'r','#b9c6e2',''],
+ ['準備時間',90,'r','#b9c6e2',''],['準備成本',90,'r','#b9c6e2',''],['廠商編號',100,'l','#b9c6e2',''],
+ ['工作站編號',100,'l','#b9c6e2',''],['備註',300,'l','#b9c6e2',''],['機台編號',100,'l','#b9c6e2','']
+];
 const ORD_EMPTY_ROWS=14;
 const SUB_EMPTY_ROWS=16;
 const SUBSEL={inv:0,ord:0};
@@ -577,6 +692,10 @@ if(!DATA.inv.procs)DATA.inv.procs={};
 if(!DATA.disp)DATA.disp=JSON.parse(JSON.stringify(DEF.disp));
 if(!DATA.disp.view)DATA.disp.view='main';
 if(!DATA.disp.procs)DATA.disp.procs=JSON.parse(JSON.stringify(DEF.disp.procs));
+if(!DATA.bom)DATA.bom=JSON.parse(JSON.stringify(DEF.bom));
+if(!DATA.bom.view)DATA.bom.view='main';
+if(typeof DATA.bom.sel!=='number')DATA.bom.sel=0;
+if(!Array.isArray(DATA.bom.list)||!DATA.bom.list.length)DATA.bom.list=JSON.parse(JSON.stringify(DEF.bom.list));
 DATA.inv.rows.forEach(r=>{while(r.length<29)r.push('');});
 let saveTimer=null;
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem(LS_KEY,JSON.stringify(DATA));},300);}
@@ -1066,10 +1185,145 @@ function bindDispHeader(){
   el.addEventListener('input',()=>{DATA.disp.header[k]=el.value;save();});
  });
 }
+/* ════════════════ BOM 模組（母件=鋼種+廠別+尺寸，多筆可查詢） ════════════════ */
+let BOMDETSEL=0,BOMPROCSEL=0;
+function curBom(){return DATA.bom.list[DATA.bom.sel]||DATA.bom.list[0];}
+function renderBom(){
+ const v=DATA.bom.view;
+ document.getElementById('bomtab-main').classList.toggle('on',v==='main');
+ document.getElementById('bomtab-proc').classList.toggle('on',v==='proc');
+ document.getElementById('bomarea').innerHTML='<div class="gridwrap" style="flex:1" id="bomgridwrap"></div>';
+ buildBomGrid();
+ updateBomPos();
+}
+function setBomView(v){DATA.bom.view=v;save();renderBom();}
+function updateBomPos(){
+ const h=curBom().header,el=document.getElementById('bompos');
+ if(el)el.textContent='第 '+(DATA.bom.sel+1)+' / '+DATA.bom.list.length+' 筆　鋼種:'+(h.steel||'')+'　廠別:'+(h.plant||'')+'　尺寸:'+(h.size||'');
+}
+function buildBomGrid(){
+ const isDet=DATA.bom.view==='main';
+ const cols=isDet?BOM_DETAIL_COLS:BOM_PROC_COLS;
+ const b=curBom();
+ const rows=isDet?b.rows:b.procs;
+ const sel=isDet?BOMDETSEL:BOMPROCSEL;
+ let w=20; cols.forEach(c=>w+=c[1]);
+ let h='<table class="grid" style="width:'+w+'px"><colgroup><col style="width:20px">';
+ cols.forEach(c=>h+='<col style="width:'+c[1]+'px">');
+ h+='</colgroup><thead><tr><th class="bl" style="width:20px"></th>';
+ cols.forEach(c=>{
+  const st=(c[3]?'background:'+c[3]+';':'')+(c[4]?'color:'+c[4]+';':'');
+  h+='<th'+(st?' style="'+st+'"':'')+'>'+c[0]+'</th>';
+ });
+ h+='</tr></thead><tbody>';
+ const total=Math.max(rows.length+12,12);
+ for(let r=0;r<total;r++){
+  const row=rows[r];
+  const on=r===sel&&(!!row||(rows.length===0&&r===0));
+  h+='<tr'+(on?' class="sel-blue"':'')+' data-r="'+r+'"><td class="gut">'+(on?'►':'')+'</td>';
+  cols.forEach((c,ci)=>{
+   h+='<td class="'+c[2]+'" contenteditable="true" spellcheck="false" data-r="'+r+'" data-c="'+ci+'">'+(row?esc(row[ci]):'')+'</td>';
+  });
+  h+='</tr>';
+ }
+ h+='</tbody></table>';
+ const wrap=document.getElementById('bomgridwrap');
+ wrap.innerHTML=h;
+ wrap.querySelectorAll('td[contenteditable]').forEach(td=>{
+  td.addEventListener('input',()=>{
+   const r=+td.dataset.r,c=+td.dataset.c;
+   while(rows.length<=r)rows.push(cols.map(()=>''));
+   rows[r][c]=td.textContent;
+   if(isDet)recalcBom();
+   save();
+  });
+  td.addEventListener('focus',()=>{
+   if(isDet)BOMDETSEL=+td.dataset.r;else BOMPROCSEL=+td.dataset.r;
+   const cur=isDet?BOMDETSEL:BOMPROCSEL;
+   wrap.querySelectorAll('tr[data-r]').forEach(tr=>{
+    const rr=+tr.dataset.r,o=rr===cur&&(!!rows[rr]||(rows.length===0&&rr===0));
+    tr.classList.toggle('sel-blue',!!o);
+    tr.querySelector('td.gut').textContent=o?'►':'';
+   });
+  });
+ });
+}
+function recalcBom(){
+ const b=curBom();let mat=0,proc=0;
+ b.rows.forEach(r=>{mat+=num(r[18]);proc+=num(r[20]);});
+ b.header.matcost=fmt(mat);b.header.proccost=fmt(proc);b.header.totcost=fmt(mat+proc);
+ ['matcost','proccost','totcost'].forEach(k=>{
+  const el=document.querySelector('#bomform [data-b="'+k+'"]');if(el)el.value=b.header[k];
+ });
+}
+function bindBomHeader(){
+ document.querySelectorAll('#bomform [data-b]').forEach(el=>{
+  const k=el.dataset.b;
+  el.addEventListener('input',()=>{curBom().header[k]=el.value;updateBomPos();save();});
+  if(el.tagName==='SELECT')el.addEventListener('change',()=>{curBom().header[k]=el.value;save();});
+ });
+}
+function loadBomHeader(){
+ const hd=curBom().header;
+ document.querySelectorAll('#bomform [data-b]').forEach(el=>{
+  const k=el.dataset.b;if(hd[k]!==undefined)el.value=hd[k];
+ });
+}
+function bomNav(delta){
+ let i=DATA.bom.sel+delta;
+ if(i<0)i=0;if(i>DATA.bom.list.length-1)i=DATA.bom.list.length-1;
+ DATA.bom.sel=i;BOMDETSEL=0;BOMPROCSEL=0;
+ loadBomHeader();renderBom();save();
+}
+function bomAdd(){
+ DATA.bom.list.push({header:{steel:'',plant:'',size:'',name:'',ver:'001',spec:'',sample:'N.否',unit:'pcs',
+  costbase:'2.數量',matno:'',prodtype:'1.廠內生產',proctrl:'否',cat:'',vendor:'',vprice:'0.00',
+  pricebase:'2.數量',moddate:'',note:'',matcost:'0.00',proccost:'0.00',totcost:'0.00'},
+  rows:[BOM_DETAIL_COLS.map(()=>'')],procs:[]});
+ DATA.bom.list[DATA.bom.list.length-1].rows[0][0]='0010';
+ DATA.bom.sel=DATA.bom.list.length-1;BOMDETSEL=0;BOMPROCSEL=0;
+ loadBomHeader();renderBom();save();
+}
+function bomAddRow(){
+ const b=curBom();
+ const row=BOM_DETAIL_COLS.map(()=>'');
+ row[0]=String((b.rows.length+1)*10).padStart(4,'0');
+ b.rows.push(row);BOMDETSEL=b.rows.length-1;
+ if(DATA.bom.view!=='main')DATA.bom.view='main';
+ renderBom();save();
+}
+function bomDel(){
+ if(DATA.bom.list.length<=1){alert('至少需保留一筆母件');return;}
+ const h=curBom().header;
+ if(!confirm('確定刪除母件「鋼種:'+h.steel+' 廠別:'+h.plant+' 尺寸:'+h.size+'」整張 BOM？'))return;
+ DATA.bom.list.splice(DATA.bom.sel,1);
+ if(DATA.bom.sel>DATA.bom.list.length-1)DATA.bom.sel=DATA.bom.list.length-1;
+ BOMDETSEL=0;BOMPROCSEL=0;loadBomHeader();renderBom();save();
+}
+function bomQuery(){
+ const s=(document.getElementById('qsteel').value||'').trim();
+ const p=(document.getElementById('qplant').value||'').trim();
+ const z=(document.getElementById('qsize').value||'').trim();
+ if(!s&&!p&&!z){alert('請輸入鋼種／廠別／尺寸任一條件');return;}
+ const i=DATA.bom.list.findIndex(b=>(!s||(b.header.steel||'').includes(s))&&(!p||(b.header.plant||'').includes(p))&&(!z||(b.header.size||'').includes(z)));
+ if(i<0){alert('查無符合的 BOM');return;}
+ DATA.bom.sel=i;BOMDETSEL=0;BOMPROCSEL=0;loadBomHeader();renderBom();save();
+}
+function bomSearch(){
+ const kw=prompt('搜尋F：請輸入關鍵字（鋼種/廠別/尺寸/品名/子件）');
+ if(!kw)return;
+ const i=DATA.bom.list.findIndex(b=>{
+  const h=b.header;
+  if([h.steel,h.plant,h.size,h.name].some(v=>String(v||'').includes(kw)))return true;
+  return b.rows.some(r=>r.some(v=>String(v||'').includes(kw)));
+ });
+ if(i<0){alert('找不到符合「'+kw+'」的資料');return;}
+ DATA.bom.sel=i;BOMDETSEL=0;BOMPROCSEL=0;loadBomHeader();renderBom();save();
+}
 /* ════════════════ 模組切換 ════════════════ */
 function switchMod(m){
  document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('on',t.dataset.mod===m));
- ['inv','ord','disp'].forEach(x=>document.getElementById('scr-'+x).classList.toggle('on',x===m));
+ ['inv','ord','disp','bom'].forEach(x=>document.getElementById('scr-'+x).classList.toggle('on',x===m));
 }
 /* ════════════════ 啟動 ════════════════ */
 renderArea('inv');
@@ -1079,6 +1333,10 @@ bindInvHeader();
 bindOrdHeader();
 bindDispHeader();
 loadInvHeader();
+bindBomHeader();
+loadBomHeader();
+renderBom();
+recalcBom();
 /*v2*/
 </script>
 </body>
