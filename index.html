@@ -240,6 +240,8 @@ tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;
       <div class="frow">
         <span class="lbl" style="width:96px">單據類別</span>
         <select class="fld" data-o="doctype" style="width:170px"><option>1.一般銷貨</option><option>2.寄賣銷貨</option></select>
+        <span class="lbl" style="margin-left:8px">業務類別</span>
+        <select class="fld" data-o="biztype" style="width:120px"><option>1.一般</option><option>2.CNC</option></select>
         <span class="lbl" style="margin-left:8px">區域編號</span><input class="fld" data-o="zone" style="width:120px">
         <span class="lbl" style="margin-left:20px">交易條件</span><input class="fld" data-o="trade" style="width:160px">
         <span class="lbl" style="margin-left:20px">急件</span>
@@ -435,7 +437,7 @@ const DEF={
   view:'main',
   header:{ordno:'114090094',orddate:'114年09月04日',sales:'',custno:'AA213_2',custname:'隆煒特殊鋼有限公司',
    taxtype:'1.外加',taxrate:'5',shipcust:'',tel:'04-25234811',addr:'台中市豐原區南陽路523巷8號',
-   isprint:'否',custord:'',doctype:'1.一般銷貨',zone:'2',trade:'現金不扣%',urgent:'',disc:'0',note:'',
+   isprint:'否',custord:'',doctype:'1.一般銷貨',biztype:'1.一般',zone:'2',trade:'現金不扣%',urgent:'',disc:'0',note:'',
    procamt:'0',matamt:'3,795',cb1:false,cb2:false,cb3:false,cb4:false,cb5:false,wnote:'',snote:'',
    total:'3,795',tax:'190',grand:'3,985',cnt:'',totwt:'185.1',profit:'',profitp:''},
   sel:0,
@@ -1069,15 +1071,4 @@ function switchMod(m){
  document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('on',t.dataset.mod===m));
  ['inv','ord','disp'].forEach(x=>document.getElementById('scr-'+x).classList.toggle('on',x===m));
 }
-/* ════════════════ 啟動 ════════════════ */
-renderArea('inv');
-renderArea('ord');
-buildDisp();
-bindInvHeader();
-bindOrdHeader();
-bindDispHeader();
-loadInvHeader();
-/*v2*/
-</script>
-</body>
-</html>
+/* ════════════════ 啟動 ═�
