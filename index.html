@@ -397,16 +397,14 @@ tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;
       </div>
       <div class="frow">
         <span class="lbl red" style="width:96px">廠別</span><input class="fld red" data-b="plant" style="width:150px">
-        <span class="lbl red" style="margin-left:14px">尺寸</span><input class="fld red" data-b="size" style="width:220px">
-        <span class="lbl" style="margin-left:14px">規格</span><input class="fld" data-b="spec" style="flex:1">
+        <span class="lbl red" style="margin-left:14px">尺寸</span><input class="fld red" data-b="size" style="flex:1">
       </div>
       <div class="frow">
         <span class="lbl" style="width:96px">樣本</span>
         <select class="fld" data-b="sample" style="width:120px"><option>N.否</option><option>Y.是</option></select>
         <span class="lbl" style="margin-left:14px">單位</span><input class="fld" data-b="unit" style="width:90px">
         <span class="lbl" style="margin-left:14px">成本基準</span>
-        <select class="fld" data-b="costbase" style="width:110px"><option>1.重量</option><option>2.數量</option></select>
-        <span class="lbl" style="margin-left:14px">材質編號</span><input class="fld" data-b="matno" style="flex:1">
+        <select class="fld" data-b="costbase" style="flex:1"><option>1.重量</option><option>2.數量</option></select>
       </div>
       <div class="frow">
         <span class="lbl" style="width:96px">生產類別</span>
@@ -544,14 +542,14 @@ const DEF={
      sample:'N.否',unit:'pcs',costbase:'2.數量',matno:'',prodtype:'1.廠內生產',proctrl:'否',cat:'',vendor:'',
      vprice:'0.00',pricebase:'2.數量',moddate:'112年12月01日',note:'',matcost:'0.00',proccost:'0.00',totcost:'0.00'},
     rows:[
-     ['0010','SGCC','','0.8*436*176mm','53010216','盛業三號黑砂紋','0','0.00','0.00','0.0000','','眾迪和','0.00','','2.數量','','','0.00','0.00','','0.00','','','']
+     ['0010','SGCC','','0.8*436*176mm','盛業三號黑砂紋','0','0.00','0.00','0.0000','','眾迪和','0.00','','2.數量','','','0.00','0.00','','0.00','','','']
     ],
     procs:[]},
    {header:{steel:'S45C',plant:'豐興',size:'50.00x6000.00',name:'S45C 圓棒 50徑 6米',ver:'001',spec:'50.00x6000.00',
      sample:'N.否',unit:'KG',costbase:'1.重量',matno:'',prodtype:'1.廠內生產',proctrl:'否',cat:'',vendor:'',
      vprice:'0.00',pricebase:'1.重量',moddate:'114年09月04日',note:'',matcost:'0.00',proccost:'0.00',totcost:'0.00'},
     rows:[
-     ['0010','S45C','豐興','50.00x6000.00','S45C-50','S45C 圓棒','1','1.00','1.00','1.0000','50.00x6000.00','切料區','5.00','KG','1.重量','','','0.00','0.00','','0.00','','','']
+     ['0010','S45C','豐興','50.00x6000.00','S45C 圓棒','1','1.00','1.00','1.0000','50.00x6000.00','切料區','5.00','KG','1.重量','','','0.00','0.00','','0.00','','','']
     ],
     procs:[
      ['0010','1A','鋸切','外徑70以下','1.廠內加工','0','0','0.00','0.00','0','0.00','','切料區','','']
@@ -660,7 +658,7 @@ const DISP_PROC_COLS=[
 /* BOM 用料明細：鋼種+廠別+尺寸 為用料 key（紅色欄） [名稱,寬,對齊,表頭底色,表頭文字色] */
 const BOM_DETAIL_COLS=[
  ['項次',44,'l','',''],['鋼種',60,'l','','#c00000'],['廠別',72,'l','','#c00000'],['尺寸',120,'l','','#c00000'],
- ['子件編號',90,'l','',''],['品名',130,'l','',''],
+ ['品名',130,'l','',''],
  ['標準用數量',80,'r','',''],['標準用總數',80,'r','',''],['單位用數量',80,'r','',''],['單位用總數',84,'r','',''],
  ['規格',100,'l','',''],['領料工作站',96,'l','',''],['損耗率(%)',70,'r','',''],['單位',44,'l','',''],
  ['成本基準',70,'l','',''],['材質編號',78,'l','',''],['類別',56,'l','',''],
@@ -1250,7 +1248,7 @@ function buildBomGrid(){
 }
 function recalcBom(){
  const b=curBom();let mat=0,proc=0;
- b.rows.forEach(r=>{mat+=num(r[18]);proc+=num(r[20]);});
+ b.rows.forEach(r=>{mat+=num(r[17]);proc+=num(r[19]);});
  b.header.matcost=fmt(mat);b.header.proccost=fmt(proc);b.header.totcost=fmt(mat+proc);
  ['matcost','proccost','totcost'].forEach(k=>{
   const el=document.querySelector('#bomform [data-b="'+k+'"]');if(el)el.value=b.header[k];
