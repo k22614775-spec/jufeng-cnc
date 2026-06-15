@@ -1071,4 +1071,15 @@ function switchMod(m){
  document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('on',t.dataset.mod===m));
  ['inv','ord','disp'].forEach(x=>document.getElementById('scr-'+x).classList.toggle('on',x===m));
 }
-/* ════════════════ 啟動 ═�
+/* ════════════════ 啟動 ════════════════ */
+renderArea('inv');
+renderArea('ord');
+buildDisp();
+bindInvHeader();
+bindOrdHeader();
+bindDispHeader();
+loadInvHeader();
+/*v2*/
+</script>
+</body>
+</html>
