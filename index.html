@@ -296,6 +296,7 @@ tr.sel-blue td.gut{background:var(--silver) !important;color:#c00000 !important;
     <button class="w98 nav" disabled><span class="ic">✕</span><span class="tx">取消Z</span></button>
     <span class="sp"></span>
     <span class="stat">待料中</span>
+    <button class="w98 nav" style="width:52px" onclick="expandBom()"><span class="ic" style="color:#c8a000">🌳</span><span class="tx">展BOM</span></button>
     <button class="w98 nav" style="width:58px" onclick="alert('批量製程')"><span class="ic" style="color:#0000c0">✚</span><span class="tx">批量製程</span></button>
     <button class="w98 nav" style="width:58px" onclick="alert('批改指送')"><span class="ic" style="color:#008000">✎</span><span class="tx">批改指送</span></button>
     <button class="w98 nav" onclick="alert('開檔')"><span class="ic" style="color:#c8a000">🖨</span><span class="tx">開檔</span></button>
@@ -516,7 +517,7 @@ const DEF={
    total:'3,795',tax:'190',grand:'3,985',cnt:'',totwt:'185.1',profit:'',profitp:''},
   sel:0,
   rows:[
-   ['0010','2.派工','','1.未開工','鋸切:未開工。','0.否','1.系統','0','S45C','大陸','S45C','','0.00x  0.00','','50.00x6000.00','20.5','2','1.整支','R','1.重量','185.1','1.重量','KG','6.業助','','','','Y.是','0.0','0.0','3,795','0','3,795','2','185.1','0.0','0.0','0','3,795','2','100.00','','1.一般','N.否','0.0','0','91','3,704','20.0','5.未設定','0.0','0.0','','','大陸','50.00x6000.00','S45C','S45C','','自取','','N.否','0.1','2.40','']
+   ['1','0010','2.派工','','1.未開工','鋸切:未開工。','0.否','1.系統','0','S45C','大陸','S45C','','0.00x  0.00','','50.00x6000.00','20.5','2','1.整支','R','1.重量','185.1','1.重量','KG','6.業助','','','','Y.是','0.0','0.0','3,795','0','3,795','2','185.1','0.0','0.0','0','3,795','2','100.00','','1.一般','N.否','0.0','0','91','3,704','20.0','5.未設定','0.0','0.0','','','大陸','50.00x6000.00','S45C','S45C','','自取','','N.否','0.1','2.40','']
   ],
   procs:{
    '0':[['0010','1.廠內加工','1A','','','鋸切','','外徑70以下','','','','00:00:00','2','','1.系統','N.否','Y.是','0','2','00:00:00']]
@@ -584,6 +585,7 @@ const PROC2_COLS=[
 ];
 /* [名稱, 寬, 對齊, 表頭底色, 表頭文字色] */
 const ORD_COLS=[
+ ['階層',60,'l','#ffe0a0',''],
  ['項次',44,'l','',''],['狀態',64,'l','#c00000','#fff'],['急件',40,'l','#c00000','#fff'],
  ['生產進度',92,'l','#8e9fd6',''],['製程進度',118,'l','#8e9fd6',''],
  ['結案',44,'l','',''],['派結',58,'l','',''],['未派數量',66,'r','',''],
@@ -625,8 +627,8 @@ const INVL_COLS=[
  ['厚度 x 寬/徑 x 長度',100,4,'r'],['合計數',52,7,'r'],['合計重量',76,8,'r']
 ];
 const ORDL_COLS=[
- ['項次',44,0,'l'],['鋼種',56,8,'l'],['品名',64,10,'l'],['廠別編號',70,9,'l'],
- ['產品種類',66,42,'l'],['厚度 x 寬/徑 x 長度',112,14,'r']
+ ['階層',56,0,'l'],['項次',44,1,'l'],['鋼種',56,9,'l'],['品名',64,11,'l'],['廠別編號',70,10,'l'],
+ ['產品種類',66,43,'l'],['厚度 x 寬/徑 x 長度',112,15,'r']
 ];
 /* 派工：上格(領料明細) */
 const DISP_UP_COLS=[
@@ -910,7 +912,11 @@ function addRow(kind){
  const d=DATA[kind];
  const cols=kind==='inv'?INV_COLS:ORD_COLS;
  const row=cols.map(()=>'' );
- if(kind==='ord'){row[0]=String((d.rows.length+1)*10).padStart(4,'0');}
+ if(kind==='ord'){
+  const top=d.rows.filter(r=>{const n=parseInt(r[0]);return n>=1&&n<100;}).length;
+  row[0]=String(top+1);                                  /* 階層：母階 1,2,3.. */
+  row[1]=String((d.rows.length+1)*10).padStart(4,'0');   /* 項次 */
+ }
  d.rows.push(row);
  d.sel=d.rows.length-1;
  renderArea(kind);
@@ -984,7 +990,7 @@ function fmt(n){return n.toLocaleString('en-US',{maximumFractionDigits:0});}
 function recalcTotals(){
  const h=DATA.ord.header;
  let amt=0,wt=0;
- DATA.ord.rows.forEach(r=>{amt+=num(r[32]);wt+=num(r[34]);});
+ DATA.ord.rows.forEach(r=>{amt+=num(r[33]);wt+=num(r[35]);});
  const rate=num(h.taxrate)/100;
  const tax=Math.round(amt*rate);
  h.total=fmt(amt);h.tax=fmt(tax);h.grand=fmt(amt+tax);
@@ -995,6 +1001,43 @@ function recalcTotals(){
   if(el)el.value=h[k];
  });
  save();
+}
+/* ════════════════ 展 BOM：把母件對應 BOM 的用料+製程就地展開成訂單明細子列 ════════════════ */
+/* 訂單明細欄位(加階層後)：0階層 1項次 2狀態 9鋼種 10廠別編號 11品名 12備註 15厚度x寬/徑x長度 17數量 */
+function expandBom(){
+ const d=DATA.ord;
+ if(!d.rows.length){alert('無訂單明細可展開');return;}
+ const prow=d.rows[d.sel];
+ const steel=(prow[9]||'').trim(),plant=(prow[10]||'').trim(),size=(prow[15]||'').trim();
+ if(!steel&&!size){alert('此列無鋼種/尺寸，無法比對 BOM');return;}
+ let bom=DATA.bom.list.find(b=>(b.header.steel||'').trim()===steel&&(b.header.plant||'').trim()===plant&&(b.header.size||'').trim()===size);
+ if(!bom)bom=DATA.bom.list.find(b=>(b.header.steel||'').trim()===steel&&(b.header.size||'').trim()===size);
+ if(!bom){alert('查無對應 BOM（鋼種:'+steel+'　廠別:'+plant+'　尺寸:'+size+'）');return;}
+ const P=parseInt(prow[0])||1;
+ const isDesc=(code)=>{let n=parseInt(code);if(isNaN(n)||n===P)return false;while(n>P)n=Math.floor(n/100);return n===P;};
+ d.rows=d.rows.filter((r,idx)=>r===prow||!isDesc(r[0]));   /* 先移除舊子孫，避免重複展開 */
+ const at=d.rows.indexOf(prow);
+ const nc=ORD_COLS.length;
+ const ins=[];
+ (bom.rows||[]).forEach((u,ui)=>{
+  const cCode=P*100+(ui+1);
+  const cr=Array(nc).fill('');
+  cr[0]=String(cCode); cr[1]=String((ui+1)*10).padStart(4,'0');
+  cr[9]=u[1]||''; cr[10]=u[2]||''; cr[11]=u[4]||''; cr[15]=u[3]||''; cr[17]=u[5]||''; cr[12]='【用料】';
+  ins.push(cr);
+  const plist=(bom.procs&&bom.procs[String(ui)])||[];
+  plist.forEach((pr,pidx)=>{
+   const gCode=cCode*100+(pidx+1);
+   const gr=Array(nc).fill('');
+   gr[0]=String(gCode); gr[1]=String((pidx+1)*10).padStart(4,'0');
+   gr[11]=pr[2]||''; gr[12]='【製程】'+(pr[1]?('['+pr[1]+'] '):'')+(pr[3]||'');
+   ins.push(gr);
+  });
+ });
+ d.rows.splice(at+1,0,...ins);
+ d.sel=at;
+ recalcTotals(); renderArea('ord'); save();
+ alert('已展開 BOM：用料 '+(bom.rows||[]).length+' 項，製程一併帶入');
 }
 /* ════════════════ 派工系統 ════════════════ */
 let DISPPROCSEL=0;
