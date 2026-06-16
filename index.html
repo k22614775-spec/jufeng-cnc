@@ -1190,7 +1190,12 @@ function renderBom(){
  const v=DATA.bom.view;
  document.getElementById('bomtab-main').classList.toggle('on',v==='main');
  document.getElementById('bomtab-proc').classList.toggle('on',v==='proc');
- document.getElementById('bomarea').innerHTML='<div class="gridwrap" style="flex:1" id="bomgridwrap"></div>';
+ let head='';
+ if(v==='proc'){
+  const h=curBom().header;
+  head='<div style="background:#e8eef8;border-bottom:1px solid var(--silver-d);padding:3px 8px;color:#000080;font-weight:bold">母件製程（跟隨上方母件）　鋼種:'+esc(h.steel||'')+'　廠別:'+esc(h.plant||'')+'　尺寸:'+esc(h.size||'')+'　版號:'+esc(h.ver||'')+'</div>';
+ }
+ document.getElementById('bomarea').innerHTML=head+'<div class="gridwrap" style="flex:1" id="bomgridwrap"></div>';
  buildBomGrid();
  updateBomPos();
 }
